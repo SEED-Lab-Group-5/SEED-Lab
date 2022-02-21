@@ -5,9 +5,7 @@
 # FUNCTION:     Find a marker on the camera and return what quadrant it is in
 # RUNNING:   Use Pi, press go
 # RESOURCE:     https://docs.opencv.org/4.1.0/d6/d00/tutorial_py_root.html
-# PURPOSE:   What the resource was used for
-# RESOURCE:     Link to any resource you used
-# PURPOSE:   What the resource was used for
+# PURPOSE:   openCV resource
 ######################################################################
 
 
