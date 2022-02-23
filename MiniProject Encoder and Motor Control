@@ -1,0 +1,94 @@
+#include "DualMC33926MotorShield.h"
+#define ENCODER_OPTIMIZE_INTERRUPTS         //Highly Optimized interrupt in background 
+#include "Encoder.h"
+#include "math.h"
+
+
+DualMC33926MotorShield md;
+
+int M1Speed = 100;
+
+
+Encoder myEnc(2,3);
+volatile int EncCount = 0;                  //Initial value of encoder
+const byte EncPinOne = 2;
+const byte EncPinTwo = 3;
+
+float RadPerCount = (2*PI)/3200;            //0.0019634954 rad/count
+float CurrentAngle;
+int CurrentQuadrant;
+int DesiredQuadrant;
+
+void setup() {
+  
+  Serial.begin(9600);
+  pinMode(EncPinOne, INPUT_PULLUP);
+  pinMode(EncPinTwo, INPUT_PULLUP);
+  pinMode(4, OUTPUT);                       //Enable Pin Must be HIGH to use motor
+  pinMode(7, OUTPUT);                       
+  pinMode(8, OUTPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(12,INPUT);
+
+
+}
+
+long EncPosition;
+
+void loop() {
+  digitalWrite(4,HIGH);  
+  
+
+  EncCount = myEnc.read();
+  CurrentAngle = EncCount*RadPerCount;
+
+  DesiredQuadrant = Serial.read();
+  //Assuming Quadrants are same as in Trig
+  //Starting at the top top position or red tape up 
+  switch (DesiredQuadrant) {
+  case 1:
+    digitalWrite(7,HIGH);
+    while(CurrentAngle < (PI/4)){
+      analogWrite(9,M1Speed);
+      EncCount = myEnc.read();
+      CurrentAngle = EncCount*RadPerCount;
+    }
+    analogWrite(9,0);
+    break;
+  case 2:
+    digitalWrite(7,LOW);
+    while(CurrentAngle > -(PI/4)){
+      analogWrite(9,M1Speed);
+      EncCount = myEnc.read();
+      CurrentAngle = EncCount*RadPerCount;
+    }
+    analogWrite(9,0);
+    break;
+  case 3:
+    digitalWrite(7,LOW);
+    while(CurrentAngle > -(3*PI/4)){
+      analogWrite(9,M1Speed);
+      EncCount = myEnc.read();
+      CurrentAngle = EncCount*RadPerCount;
+    }
+    analogWrite(9,0);
+    break;
+  case 4: 
+    digitalWrite(7,HIGH);
+    while(CurrentAngle < (3*PI/4)){
+      analogWrite(9,M1Speed);
+      EncCount = myEnc.read();
+      CurrentAngle = EncCount*RadPerCount;
+    }
+    analogWrite(9,0);
+    break;
+  default:
+    // if nothing else matches, do the default
+    // default is optional
+    break;
+  }
+
+}
+
+
