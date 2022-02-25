@@ -105,7 +105,7 @@ void loop() {
 
   // Calculate desired angular position
   desiredAngle = desiredAngleCoeff * float(PI / 2);
-  
+
 
   // Find current angular velocity in rad/s: (x2 - x1) / ∆t
   //angVelocity = ((float((newPosition - initialPosition) - (position - initialPosition)) * float((2.0 * PI) / CPR)) *float(1000)) / float(Ts);
@@ -173,7 +173,7 @@ int control(float current, float desired) {
   Serial.print("\tcontroler(int): ");
   Serial.println(int(newTargetSpeed));
 
-  newTargetSpeed = (newTargetSpeed-4)*50;
+  newTargetSpeed = (newTargetSpeed)*50;
 
   return int(newTargetSpeed);
 }
