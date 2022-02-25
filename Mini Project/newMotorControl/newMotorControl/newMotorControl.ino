@@ -32,15 +32,6 @@ int control(float current, float desired);
 Encoder motorEnc(ENC_PIN_A, ENC_PIN_B); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
 DualMC33926MotorShield motor;
 
-//const byte ENC_PIN_TWO = 2;     // Encoder input 2
-//const byte ENC_PIN_ONE = 3;     // Encoder input 1
-//const byte MOTOR_ENABLE = 4;    // Disables motor outputs when LOW, Toggling resets fault condition
-//const byte M1VOLT_SIGN = 7;     // Motor 1 direction. LOW = Forward, HIGH = Reverse
-//const byte M2VOLT_SIGN = 8;     // Motor 2 direction. LOW = Forward, HIGH = Reverse
-//const byte M1PWM = 9;           // Controls whether PWM voltage is applied to motor 1 or not
-//const byte M2PWM = 10;          // Controls whether PWM voltage is applied to motor 2 or not
-//const byte FAULT_STATUS = 12;   // Status flag indicator (LOW indicates fault)
-
 long initialPosition = 0;          // initial position of motor (counts)
 volatile long position = 0;        // Previous position reading (counts)
 volatile long newPosition = 0;     // Current position reading (counts)
@@ -64,12 +55,8 @@ unsigned long prevSampleTime = 0;        // Time the last data receive occured
 
 const long SAMPLE_RATE = 5;     // Sample rate in ms
 int targetSpeed = 0;
-bool commandReceived = false; // flag for new serial input
-bool runExperiment = false;
-String InputString = ""; // a string to hold incoming data
 
 void setup() {
-
   // initialize i2c as slave
   Wire.begin(SLAVE_ADDRESS);
   // define callbacks for i2c communication
@@ -78,23 +65,15 @@ void setup() {
   // Begin serial communication
   Serial.begin(9600);
 
-  //Serial.begin(115200);
-
   // Get initial position
   initialPosition = motorEnc.read();
 
-  InputString.reserve(200);      // reserve 200 bytes for the inputString
   motor.init();                       // Initialize motor
   motor.setM1Speed(0);
 }
 
 void loop() {
 
-  // Enable motor
-  //  digitalWrite(MOTOR_ENABLE, HIGH);
-
-  // Read current encoder value and calculate motor angle.
-  //  newPosition = myEnc.read();
   // Read encoders and update current time
   newPosition = motorEnc.read();
   Tc = millis();
@@ -106,11 +85,9 @@ void loop() {
   // Calculate desired angular position
   desiredAngle = desiredAngleCoeff * float(PI / 2);
 
-
   // Find current angular velocity in rad/s: (x2 - x1) / ∆t
   //angVelocity = ((float((newPosition - initialPosition) - (position - initialPosition)) * float((2.0 * PI) / CPR)) *float(1000)) / float(Ts);
 
-  // TODO modify to output a value between -400 and 400 and not use analogwrite
   // use control() to determine target speed and direction
   targetSpeed = control(newPosition, desiredAngleCoeff*800);
 
