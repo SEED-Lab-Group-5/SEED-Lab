@@ -99,7 +99,7 @@ void loop() {
   // Read encoders and update current time
   newPosition = motorEnc.read();
   Tc = millis();
-  if (newPosition >= 3200) newPosition -= 3200; // MODIFIED SO 3200 COUNTS CHANGES TO 0!!!!!!
+  while (newPosition >= 3200) newPosition -= 3200; // MODIFIED SO 3200 COUNTS CHANGES TO 0!!!!!!
 
   // Find current angular motor position relative to initial position
   currentAngle = float(newPosition - initialPosition) * float((2.0 * PI) / float(CPR));
@@ -168,10 +168,13 @@ int control(float current, float desired) {
   Serial.print(desired);
   Serial.println("\terror: ");
   Serial.println(error);
-  Serial.print("\tnewTargetSpeed: ");
+  Serial.print("\tcontroller: ");
   Serial.println(newTargetSpeed);
-  Serial.print("\tnewTargetSpeed(int): ");
+  Serial.print("\tcontroler(int): ");
   Serial.println(int(newTargetSpeed));
+
+  newTargetSpeed = (newTargetSpeed-4)*50;
+
   return int(newTargetSpeed);
 }
 
