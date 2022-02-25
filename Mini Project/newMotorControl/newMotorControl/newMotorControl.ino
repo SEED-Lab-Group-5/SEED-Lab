@@ -46,7 +46,7 @@ volatile long position = 0;        // Previous position reading (counts)
 volatile long newPosition = 0;     // Current position reading (counts)
 unsigned long now = 0;    // Elapsed time in ms
 unsigned long start = 0;  // Experiment start time
-volatile float angPosition = 0;     // position relative to initial position (radians)
+volatile float currentAngle = 0;     // position relative to initial position (radians)
 volatile float angVelocity = 0;     // Current angular velocity (rad/s)
 
 const float CPR = 50.0 * 64.0;           // Total encoder counts per revolution (CPR) of motor shaft
@@ -102,7 +102,7 @@ void loop() {
   if (newPosition >= 3200) newPosition -= 3200; // MODIFIED SO 3200 COUNTS CHANGES TO 0!!!!!!
 
   // Find current angular motor position relative to initial position
-  angPosition = float(newPosition - initialPosition) * float((2.0 * PI) / float(CPR));
+  currentAngle = float(newPosition - initialPosition) * float((2.0 * PI) / float(CPR));
 
   // Calculate desired angular position
   desiredAngle = desiredAngleCoeff * float(PI / 2);
