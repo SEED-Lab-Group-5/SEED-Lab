@@ -108,8 +108,7 @@ void loop() {
   desiredAngle = desiredAngleCoeff * float(PI / 2);
 
   // Find current angular velocity in rad/s: (x2 - x1) / ∆t
-  angVelocity = ((float((newPosition - initialPosition) - (position - initialPosition)) * float((2.0 * PI) / CPR)) *
-           float(1000)) / float(SAMPLE_RATE);
+  //angVelocity = ((float((newPosition - initialPosition) - (position - initialPosition)) * float((2.0 * PI) / CPR)) *float(1000)) / float(Ts);
 
   // TODO modify to output a value between -400 and 400 and not use analogwrite
   // use control() to determine target speed and direction
@@ -119,14 +118,9 @@ void loop() {
   motor.setM1Speed(targetSpeed);
 
   // Print elapsed time, target speed, angular velocity
-  Serial.print(millis() - start); // Prints elapsed time in ms
-  Serial.print("\t");
-  Serial.print((targetSpeed) * 51 / 80); // Same conversion used in the motor library for analogWrite()
-  Serial.print("\t");
-  Serial.print(angVelocity, 7);
-  Serial.print("\t");
-  Serial.print(angPosition, 7);
-  Serial.println("");
+  //Serial.print(millis() - start); // Prints elapsed time in ms
+  //Serial.print("\t");
+  //Serial.print((targetSpeed) * 51 / 80); // Same conversion used in the motor library for analogWrite()
 
 }
 
@@ -168,11 +162,15 @@ int control(float current, float desired) {
   Tc = millis();      // Update current time? //TODO is this redundant if it gets set in loop()?
 
   //TODO scale output to [-255, 255]
-  Serial.print("error: ");
+  Serial.print("\nCurrentAngle: ");
+  Serial.print(current);
+  Serial.print("\tDesiredAngle: ");
+  Serial.print(desired);
+  Serial.println("\terror: ");
   Serial.println(error);
-  Serial.print("newTargetSpeed: ");
+  Serial.print("\tnewTargetSpeed: ");
   Serial.println(newTargetSpeed);
-  Serial.print("newTargetSpeed(int): ");
+  Serial.print("\tnewTargetSpeed(int): ");
   Serial.println(int(newTargetSpeed));
   return int(newTargetSpeed);
 }
