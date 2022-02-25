@@ -52,7 +52,6 @@ volatile float angVelocity = 0;     // Current angular velocity (rad/s)
 const float CPR = 50.0 * 64.0;           // Total encoder counts per revolution (CPR) of motor shaft
 const float RAD_PER_COUNT = (2 * PI) / 3200;    // 0.0019634954 rad/count
 
-float currentAngle;
 int desiredAngleCoeff = 0;     // Angle to move the motor to (Value between 0-3 to be multiplied by PI/2 to find angle to move motor to)    ///// May need to set this to 0 for final implementation, not sure yet /////
 float desiredAngle = 0;
 bool angleRead;
@@ -106,13 +105,14 @@ void loop() {
 
   // Calculate desired angular position
   desiredAngle = desiredAngleCoeff * float(PI / 2);
+  
 
   // Find current angular velocity in rad/s: (x2 - x1) / ∆t
   //angVelocity = ((float((newPosition - initialPosition) - (position - initialPosition)) * float((2.0 * PI) / CPR)) *float(1000)) / float(Ts);
 
   // TODO modify to output a value between -400 and 400 and not use analogwrite
   // use control() to determine target speed and direction
-  targetSpeed = control(currentAngle, desiredAngle);
+  targetSpeed = control(newPosition, desiredAngleCoeff*800);
 
   // Set the motor to the target speed (also accounts for direction)
   motor.setM1Speed(targetSpeed);
