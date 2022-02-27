@@ -8,7 +8,6 @@
 #include "math.h"
 #include <Wire.h>
 
-//DualMC33926MotorShield md;
 /*DualMC33926MotorShield::DualMC33926MotorShield()
 {
   //Pin map
@@ -22,11 +21,10 @@
 const float KP = 1.2529, KI = 0.0903, KD = 0;
 unsigned long Ts = 0, Tc = 0;
 float error, pastError = 0;
+int control(float current, float desired);
+float I = 0, D = 0;
 
 void receiveData(int byteCount);
-
-int control(float current, float desired);
-
 #define ENC_PIN_A 3       // Encoder output A (yellow wire, must be connected to 2 or 3 for interrupts)
 #define ENC_PIN_B 2       // Encoder output B (white wire)
 Encoder motorEnc(ENC_PIN_A, ENC_PIN_B); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
@@ -77,7 +75,7 @@ void loop() {
   // Read encoders and update current time
   newPosition = motorEnc.read();
   Tc = millis();
-  while (newPosition >= 3200) newPosition -= 3200; // MODIFIED SO 3200 COUNTS CHANGES TO 0!!!!!!
+  //while (newPosition >= 3200) newPosition -= 3200; // MODIFIED SO 3200 COUNTS CHANGES TO 0!!!!!!
 
   // Find current angular motor position relative to initial position
   currentAngle = float(newPosition - initialPosition) * float((2.0 * PI) / float(CPR));
@@ -89,7 +87,7 @@ void loop() {
   //angVelocity = ((float((newPosition - initialPosition) - (position - initialPosition)) * float((2.0 * PI) / CPR)) *float(1000)) / float(Ts);
 
   // use control() to determine target speed and direction
-  targetSpeed = control(newPosition, desiredAngleCoeff*800);
+  targetSpeed = control(currentAngle, desiredAngle);
 
   // Set the motor to the target speed (also accounts for direction)
   motor.setM1Speed(targetSpeed);
@@ -103,27 +101,34 @@ void loop() {
 
 // Current and desired are angles in radians
 int control(float current, float desired) {
-  float I = 0, D = 0;
 
   double newTargetSpeed, maxSpeed = 400;   // 255 or 400 if using the motorShield header
 
-  error = current - desired;      // Update error
+  error = desired - current;      // Update error
 
   if (Ts > 0) {
     // Calculate D
     D = (error - pastError) / float(Ts);
     pastError = error;
   } else {
-    D = 0;
   }
+
+  //TODO when should I be reset to 0?????
+  // If I keeps accumulating, so will the controller output, and the speed will increase to max and stay there.
+  // Should it be reset when error gets close to zero?
+  // Or should it only be reset when the desired position changes?
+  // Or should I just remove I entirely from the controller?
 
   // Calculate I
   I += float(Ts) * error;
-  // If the error is approximately 0, set I=0
-  //if (abs(error) < 0.001) error = 0;
 
   // Calculate controller output
-  newTargetSpeed = KP * error + KI * I + KD * D;
+  newTargetSpeed = KP * error + KI * I;
+
+  // TODO make sure this is correct
+  // The step response experiment used 255 as the max command.
+  // So the controller output needs to be scaled by 400/255
+  newTargetSpeed *= 400.0 / 255.0;
 
   // If calculated controller output is higher than the maximum output,
   // set output to the maximum output with matching sign
@@ -133,12 +138,13 @@ int control(float current, float desired) {
     } else {
       newTargetSpeed = maxSpeed;
     }
+    // Undo integration
+    I -= float(Ts) * error;
   }
 
   Ts = millis() - Tc; // Determine sample time Ts
   Tc = millis();      // Update current time? //TODO is this redundant if it gets set in loop()?
 
-  //TODO scale output to [-255, 255]
   Serial.print("\nCurrentAngle: ");
   Serial.print(current);
   Serial.print("\tDesiredAngle: ");
@@ -147,10 +153,11 @@ int control(float current, float desired) {
   Serial.println(error);
   Serial.print("\tcontroller: ");
   Serial.println(newTargetSpeed);
-  Serial.print("\tcontroler(int): ");
+  Serial.print("\tcontroller(int): ");
   Serial.println(int(newTargetSpeed));
 
-  newTargetSpeed = (newTargetSpeed)*50;
+  // TODO should this be scaled????
+  newTargetSpeed = newTargetSpeed*50;
 
   return int(newTargetSpeed);
 }
