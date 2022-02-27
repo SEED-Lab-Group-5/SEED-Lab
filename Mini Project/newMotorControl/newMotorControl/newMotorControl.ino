@@ -18,7 +18,8 @@
   _M1FB = A0;
 }*/
 
-const float KP = 1.2529, KI = 0.0903, KD = 0;
+// UPDATED
+const float KP = 0.6137, KI = 0.0888, KD = 0;
 unsigned long Ts = 0, Tc = 0;
 float error, pastError = 0;
 int control(float current, float desired);
