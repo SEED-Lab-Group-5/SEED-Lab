@@ -69,10 +69,10 @@ float currentAngle;
 byte currentQuadrant;
 
 bool angleRead;                 // Flag to indicate if a serial read operation has occured
-int desiredAngleCoeff = 0;     // Angle to move the motor to (Value between 0-3 to be multiplied by PI/2 to find angle to move motor to)    ///// May need to set this to 0 for final implementation, not sure yet /////
+int desiredAngleCoeff = 0;      // Angle to move the motor to (Value between 0-3 to be multiplied by PI/2 to find angle to move motor to)
 
 const float FLOAT_DELTA = 0.01; // How close a float must be to a desired value to be considered equal (actualValue +- FLOAT_DELTA = desiredValue)
-const int BRAKE_TIME = 50;      // Time in ms to give motor to stop after being told to do so       ////// May not need this //////
+const int BRAKE_TIME = 50;      // Time in ms to give motor to stop after being told to do so     
 
 const unsigned long SAMPLE_TIME = 1000;  // Number of milliseconds between data receive from Pi
 unsigned long prevSampleTime = 0;        // Time the last data receive occured
@@ -122,15 +122,14 @@ void loop() {
 
     if(motor1Speed < 0) { // If the controller says it needs to go backwards
       digitalWrite(M1VOLT_SIGN, HIGH); // Set motor direction to CW
-      motor1Speed = abs(motor1Speed); // restore a positive sign
+      motor1Speed = abs(motor1Speed);  // restore a positive sign
     }
     else {
-      digitalWrite(M1VOLT_SIGN, LOW); // Set motor direction to CCW
+      digitalWrite(M1VOLT_SIGN, LOW);  // Set motor direction to CCW
     }
     // Set the motor speed
-    analogWrite(M1PWM, motor1Speed);                                                            // Start rotating motor 1
+    analogWrite(M1PWM, motor1Speed);   // Start rotating motor 1
   }
-  
 }
 
 int control(float current, float desired) {
