@@ -2,7 +2,11 @@
 # NAME:     Johnathan Evans (Primary Author),   Modified by David Long
 # CLASS:    EENG-350
 # TITLE:    Mini-Project
+#
 # FUNCTION: Find a marker on the camera and return what quadrant it is in
+#           Send this information to the Arduino and LCD screen over I2C.
+#
+# HARDWARE: 
 # RUNNING:  Use Pi, press go
 # RESOURCE: https://docs.opencv.org/4.1.0/d6/d00/tutorial_py_root.html
 # PURPOSE:  openCV resource
@@ -39,6 +43,9 @@ lcd_rows = 2
 i2c = board.I2C()
 lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 #################################
+
+# Global flag to enable debug mode
+bool DEBUG = False
 
 # Print message to LCD screen indicating what angle the motor is being told to move to
 def sendToLCD(quadrant):
@@ -77,17 +84,8 @@ def main():
     # Wait for the automatic gain control to settle
     time.sleep(2)
 
-    # Now fix the values
-    #camera.shutter_speed = camera.exposure_speed
-    #camera.exposure_mode = 'off'
-    #g = camera.awb_gains
-    #camera.awb_mode = 'off'
-    #camera.awb_gains = g
-
-
-    # Callibrate color
+    # Calibrate color
     input('Hold monochrome marker in front of camera and press enter to begin callibration')
-
     camera.capture(rawCapture, format = "bgr")
     image = rawCapture.array
     image = cv.cvtColor(image, cv.COLOR_BGR2HSV)
@@ -96,18 +94,11 @@ def main():
     print(px)
     lower_mask = np.array([px[0] - 10, 0, 0])
     upper_mask = np.array([px[0] + 10, 255, 255])
-
-
-    #print(colorMedian)
-
-    #cv.imshow('', image)
-    #cv.waitKey(0)
-
     camera.close()
+    
     #-----------------------------------
     # Prepare video capture
     cap = cv.VideoCapture(0)
-    #currentWB = cap.get(cv.CAP_PROP_WHITE_BALANCE_BLUE_U)
 
     # Test camera function
     if not cap.isOpened():
@@ -115,9 +106,7 @@ def main():
         exit()
         
     # Run video with cap open
-    while True:
-        #cap.set(cv.CAP_PROP_WHITE_BALANCE_BLUE_U, currentWB)
-        
+    while True:        
         # Capture frame-by-frame
         ret, img = cap.read()
         
@@ -135,11 +124,7 @@ def main():
         
         # Transform to hsv for color analysis
         imghsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-
         mask = cv.inRange(imghsv, lower_mask, upper_mask)
-
-        # Make mask
-        #mask = cv.cvtColor(mask, cv.COLOR_HSV2BGR)
         
         # Below code is to clean the image
         kernel = np.ones((5, 5), np.uint8)  # create kernel
@@ -153,33 +138,33 @@ def main():
         nonzero = np.nonzero(mask)
         if len(nonzero[0]) == 0:
             print('No markers found')
-
-        # ============================= TODO =============================
-        # view location to find quadrant
-        # ================================================================    
+        
         else:
-            # Find angle and return quadrant (-1 for no color found)
-            locx = nonzero[1].mean()
-            locy = nonzero[0].mean()
-            ret_quad = -1
-            if locx > width / 2 and locy < height / 2:
-                ret_quad = 1
-            elif locx < width / 2 and locy < height / 2:
-                ret_quad = 0
-            elif locx < width / 2 and locy > height / 2:
-                ret_quad = 3
-            elif locx > width / 2 and locy > height / 2:
-                ret_quad = 2
-            else:
+            # If debug is not enabled, send quadrant based on data from camera
+            if(!DEBUG):
+                # Find angle and return quadrant (-1 for no color found)
+                locx = nonzero[1].mean()
+                locy = nonzero[0].mean()
                 ret_quad = -1
-            #====================================DAVID HERE IS YOUR RETURN
+                if locx > width / 2 and locy < height / 2:
+                    ret_quad = 1
+                elif locx < width / 2 and locy < height / 2:
+                    ret_quad = 0
+                elif locx < width / 2 and locy > height / 2:
+                    ret_quad = 3
+                elif locx > width / 2 and locy > height / 2:
+                    ret_quad = 2
+                else:
+                    ret_quad = -1
+                print(ret_quad)
+                
+            # If debug is enabled, send quadrant information based on user input (bypasses computer vision)
+            elif(DEBUG):
+                ret_quad = int(input("Enter Quadrant: "))    
 
-##            ret_quad = int(input("Enter Quadrant: "))    
+            # Send quadrant information to Arduino and LCD screen
             writeArduino(ret_quad)        
-            sendToLCD(ret_quad)
-            print(ret_quad)
-            
-            #==================================== -1 IS FOR NO DETECTED COLOR
+            sendToLCD(ret_quad)          
             
         # Display the resulting frame
         cv.imshow('frame', mask)
@@ -189,7 +174,6 @@ def main():
     # When everything done, release the capture
     cap.release()
     cv.destroyAllWindows()
-
 
 # Run main function   
 if __name__ == "__main__":
