@@ -1,4 +1,4 @@
-########################################################################## 
+###################################################################################
 # NAME:     Johnathan Evans (Primary Author),   Modified by David Long
 # CLASS:    EENG-350
 # TITLE:    Mini-Project
@@ -6,14 +6,31 @@
 # FUNCTION: Find a marker on the camera and return what quadrant it is in
 #           Send this information to the Arduino and LCD screen over I2C.
 #
-# HARDWARE: 
-# RUNNING:  Use Pi, press go
+# HARDWARE: Attach LCD display to Raspberry Pi header
+#
+#           Attach camera via ribbon cable to CAMERA port on Raspberry PI
+#
+#           Pin Connection Guide
+#           Raspberry Pi | Arduino
+#           GPIO2 (SDA) -> A4
+#           GPIO3 (SCL) -> A5
+#           GND         -> GND
+#
+# EXECUTE:  Follow the connection guide above to link Raspberry Pi, Arduino
+#           and LCD together for I2C and allow camera input. Next, upload the
+#           "INSERT FILE NAME HERE"
+#           program to the Arduino and follow connection guide detailed there.
+#           Finally, run this program and follow the prompts in the Python Shell.
+#
+#           NOTE: If you do not want to run the computer vision portion of this
+#           code, but still want to transmit a quadrant to the Arduino. Set the
+#           DEBUG global flag to True.
+#
 # RESOURCE: https://docs.opencv.org/4.1.0/d6/d00/tutorial_py_root.html
 # PURPOSE:  openCV resource
-##########################################################################
+##################################################################################
 
 # Imports 
-import smbus
 import cv2 as cv
 import numpy as np
 from picamera.array import PiRGBArray
@@ -21,17 +38,16 @@ from picamera import PiCamera
 import time
 print(cv.__version__)
 
+##################################
+# Code required for I2C connection
+import smbus
+
 # Create new bus object
 bus = smbus.SMBus(1)
 
 # This is the address we setup in the Arduino Program
 address = 0x04
-
-# Send value to Arduino
-def writeArduino(value):
-    # Write passed value to I2C address
-    bus.write_byte(address, value)
-    return -1
+##################################
 
 #################################
 # Code required for LCD interface
@@ -43,6 +59,12 @@ lcd_rows = 2
 i2c = board.I2C()
 lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 #################################
+
+# Function to send a value to the Arduino
+def writeArduino(value):
+    # Write passed value to I2C address
+    bus.write_byte(address, value)
+    return -1
 
 # Global flag to enable debug mode
 bool DEBUG = False
@@ -68,6 +90,8 @@ def sendToLCD(quadrant):
 
     else:
         lcd.message = "MARKER NOT FOUND"
+
+
 
 def main():
 
