@@ -1,22 +1,31 @@
-//////////////////////////////////////////////////////////////////////// NAME:     
-// CLASS:	  EENG-350
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// NAME:     Trevor Olsen (Primary Author) Modified by David Long 
+// CLASS:	 EENG-350
 // GROUP:    5
 // TITLE:    Motor Control Mini-Project
-// FUNCTION: The Function is to control a motor to turn to a given point in a circle pi/2radians apart, and 
+//
+// FUNCTION: The Function is to control a motor to turn to a given point in a circle pi/2 radians apart, and 
 //           implement a control algorithm to resist changes if external force is applied to the wheel.
 //
-// HARDWARE: Arduino Uno + MC33926 motor driver shield 
+// HARDWARE: Components:
+//           Arduino Uno + MC33926 motor driver shield 
 //           Motor: 50:1 Metal Gearmotor 37Dx70L mm 12V with 64 CPR Encoder (Spur Pinion)
 //           Battery: 7.2V capable of 3.2A 
 //           Voltage Regulator: HCW-M635
+//
+//           Arduino and Motor Controller Connection Guide:
 //              - Power Arduino through USB
 //              - Power MC33926 through Input phoenix connector from output of voltage regulator
 //              - Power in to the voltage regulator from the battery 
 //              - Connect M1 output phoenix connector to the black and red pins on the motor 
-//              - Connect 5V+(Blue) and GND(Green) to the center two pins of the motor cable  to power the encoder
-//              - Connect Arduino pins 2 and 3 (both interrup pins) to white and yellow pins on the motor cable as the encoder pins 
-//           Rasberri Pi 
-//              - 
+//              - Connect 5V+(Blue) and GND(Green) to the center two pins of the motor cable to power the encoder
+//              - Connect Arduino pins 2 and 3 (both interrupt pins) to white and yellow pins on the motor cable as the encoder pins 
+//          
+//          I2C Connection Guide: 
+//          Rasberryi Pi | Arduino
+//          GPIO2 (SDA) -> A4
+//          GPIO3 (SCL) -> A5
+//          GND         -> GND
 //
 // RUNNING:  Execution instructions for your program
 // RESOURCE: Link to any resource you used
