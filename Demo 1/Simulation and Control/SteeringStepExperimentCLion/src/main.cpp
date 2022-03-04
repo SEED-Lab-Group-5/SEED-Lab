@@ -41,6 +41,7 @@
 // TODO change motor pins if needed
 // Default pins used in DualMotorShield
 /*DualMC33926MotorShield::DualMC33926MotorShield()
+ * test
 {
   //Pin map
   _nD2 = 4;
@@ -52,6 +53,10 @@
   _M1FB = A0;
   _M2FB = A1;
 }*/
+// Define a "Pair" struct for each type to simplify code
+struct FloatPair {float L; float R;};
+struct LongPair {long L; long R;};
+struct IntPair {long L; long R;};
 
 // Encoder parameters
 const float CPR = 50.0*64.0;        // Total encoder counts per revolution (CPR) of motor shaft
@@ -62,12 +67,13 @@ const float CPR = 50.0*64.0;        // Total encoder counts per revolution (CPR)
 #define ENC_L_PIN_B 6					// Left encoder output B (white wire)
 Encoder motorEncR(ENC_R_PIN_A, ENC_R_PIN_B); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
 Encoder motorEncL(ENC_L_PIN_A, ENC_L_PIN_B);
-volatile long newPositionR = 0, newPositionL = 0;     	// Current position reading (counts)
+volatile LongPair newPosition = {0,0};     	// Current position reading (counts)
+
 
 // Experiment parameters
 DualMC33926MotorShield motors;
 const long SAMPLE_RATE = 5;     	// Sample rate in ms
-const int TARGET_SPEED = 400;   	// Desired speed. If using DualMC33926MotorShield.h: max speed = 400
+const int MAX_SPEED = 400;   	// Desired speed. If using DualMC33926MotorShield.h: max speed = 400
 bool motorsSet = false;
 unsigned long now = 0;    			// Elapsed time in ms
 unsigned long start = 0;  			// Experiment start time
@@ -75,8 +81,13 @@ volatile float angPosR = 0, angPosL = 0;     		// position relative to initial p
 volatile float newAngPosR = 0, newAngPosL = 0;     // current position relative to initial position (radians)
 volatile float angVelR = 0, angVelL = 0;     // Current angular velocity (rad/s)
 
+// Steering
+float motorDif = 0, motorSum = 400;
+// Given the sum and difference [0,1], set the speed command of each motor
+void setMotorValues(float commandDifference, float commandSum);
+
 bool commandReceived = false; 	// flag for new serial input
-bool runExperiment = false;
+bool run1, run2;
 
 String InputString = ""; // a string to hold incoming data
 
@@ -92,21 +103,30 @@ void loop() {
 	// Change behavior based on serial input
 	if (commandReceived) {
 		switch (InputString.charAt(0)) {
-			case 'S':
-				runExperiment = true;
+			case '1':
+				run1 = true;
+				run2 = false;
 				start = millis();
 				break;
+			case '2':
+				run1 = false;
+				run2 = true;
+				start = millis();
 			case 'E':
-				runExperiment = false;
+				run1 = false;
+				run2 = false;
 				break;
+
 		}
 		commandReceived = false;
 	}
 
-	if(runExperiment) {
+	if(run1) {
 		// At 1 second, set the motor to target speed
 		if(millis()-start >= 1000 && !motorsSet) {
-			motors.setSpeeds(TARGET_SPEED, TARGET_SPEED);
+			setMotorValues(0, 1);
+
+			motors.setSpeeds(MAX_SPEED, MAX_SPEED);
 			motorsSet = true;
 		}
 
@@ -133,7 +153,7 @@ void loop() {
 				// Print elapsed time, target speed, and angular velocity for each motor
 				Serial.print(millis()-start); // elapsed time in ms
 				Serial.print("\t");
-				Serial.print(TARGET_SPEED); // [-400,400]
+				Serial.print(MAX_SPEED); // [-400,400]
 				Serial.print("\t");
 				Serial.print(angVelR, 7); // Right motor velocity
 				Serial.print("\t");
@@ -159,6 +179,11 @@ void loop() {
 			motorEncL.write(0);
 		}
 	}
+}
+
+void setMotorValues(float commandDifference, float commandSum) {
+
+
 }
 
 void serialEvent() {
