@@ -37,7 +37,7 @@
 #include <Arduino.h>
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
-// This is a test
+
 // TODO change motor pins if needed
 // Default pins used in DualMotorShield
 /*DualMC33926MotorShield::DualMC33926MotorShield()
@@ -53,10 +53,22 @@
   _M1FB = A0;
   _M2FB = A1;
 }*/
-// Define a "Pair" struct for each type to simplify code
-struct FloatPair {float L; float R;};
-struct LongPair {long L; long R;};
-struct IntPair {long L; long R;};
+
+// Instead of having a lot of duplicate lines, I decided to store left and right variables together.
+// Arduino doesn't have std::pair, so I made my own that works with any type T.
+template<typename T>
+struct Pair {
+	T L; T R;
+	// I did some serious operator overloading to do math on both elements at once.
+	Pair operator+(const T & a) const {			return Pair<T>( {T(L)+a, T(R)+a} );	};
+	Pair operator+(const Pair<T> & a) const {	return Pair<T>( {T(L)+a.L, T(R)+a.R} ); };
+	Pair operator-(const T & a) const { 		return Pair<T>( {T(L)-a, T(R)-a} ); };
+	Pair operator-(const Pair<T> & a) const {	return Pair<T>( {T(L)-a.L, T(R)-a.R} ); };
+	Pair operator*(const T & a) const { 		return Pair<T>( {T(L)*a, T(R)*a} ); };
+	Pair operator*(const Pair<T> & a) const {	return Pair<T>( {T(L)*a.L, T(R)*a.R} ); };
+	Pair operator/(const T & a) const {			return Pair<T>( {T(L)/a, T(R)/a} ); };
+	Pair operator/(const Pair<T> & a) const {	return Pair<T>( {T(L)/a.L, T(R)/a.R} );	};
+};
 
 // Encoder parameters
 const float CPR = 50.0*64.0;        // Total encoder counts per revolution (CPR) of motor shaft
@@ -67,7 +79,7 @@ const float CPR = 50.0*64.0;        // Total encoder counts per revolution (CPR)
 #define ENC_L_PIN_B 6					// Left encoder output B (white wire)
 Encoder motorEncR(ENC_R_PIN_A, ENC_R_PIN_B); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
 Encoder motorEncL(ENC_L_PIN_A, ENC_L_PIN_B);
-volatile LongPair newPosition = {0,0};     	// Current position reading (counts)
+Pair<long> newPosition;     	// Current position reading (counts)
 
 
 // Experiment parameters
@@ -77,21 +89,23 @@ const int MAX_SPEED = 400;   	// Desired speed. If using DualMC33926MotorShield.
 bool motorsSet = false;
 unsigned long now = 0;    			// Elapsed time in ms
 unsigned long start = 0;  			// Experiment start time
-volatile float angPosR = 0, angPosL = 0;     		// position relative to initial position (radians)
-volatile float newAngPosR = 0, newAngPosL = 0;     // current position relative to initial position (radians)
-volatile float angVelR = 0, angVelL = 0;     // Current angular velocity (rad/s)
+Pair<float> angPos, newAngPos, angVel;
+//volatile float angPos.R = 0, angPos.L = 0;     		// position relative to initial position (radians)
+//volatile float newAngPos.R = 0, newAngPos.L = 0;     // current position relative to initial position (radians)
+//volatile float angVel.R = 0, angVel.L = 0;     		// Current angular velocity (rad/s)
 
 // Steering
-float motorDif = 0, motorSum = 400;
+float motorDif, motorSum; // Parameters for steering
+
 // Given the sum and difference [0,1], set the speed command of each motor
-void setMotorValues(float commandDifference, float commandSum);
+void setMotorValues(float commandDifference, float commandSum); // TODO define this function
 
 bool commandReceived = false; 	// flag for new serial input
-bool run1, run2;
-
-String InputString = ""; // a string to hold incoming data
+bool run1, run2;				// flags to indicate which experiment to run
+String InputString = ""; 		// a string to hold incoming data
 
 void setup() {
+
 	Serial.begin(115200);
 	InputString.reserve(200);      // reserve 200 bytes for the inputString
 	motors.init();                       // Initialize motor
@@ -137,16 +151,15 @@ void loop() {
 			now += SAMPLE_RATE;
 
 			// Read new encoder counts from both motors
-			newPositionR = -motorEncR.read(); // One needs to be negative! CCW looking into the wheel is positive
-			newPositionL = motorEncL.read();  // Left is positive
+			// One needs to be negative! CCW looking into the wheel is positive
 
-			// Find angular motor positions
-			newAngPosR = float(newPositionR) * float((2.0 * PI) / float(CPR));
-			newAngPosL = float(newPositionL) * float((2.0 * PI) / float(CPR));
+			newPosition = {motorEncL.read(), -motorEncR.read()}; // Left is positive, right is negative
+
+			// Convert encoder counts to radians
+			newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * float((2.0 * PI) / CPR);
 
 			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
-			angVelR = ((newAngPosR - angPosR) * float(1000) ) / float(SAMPLE_RATE);
-			angVelL = ((newAngPosL - angPosL) * float(1000) ) / float(SAMPLE_RATE);
+			angVel = ((newAngPos - angPos) * float(1000) ) / float(SAMPLE_RATE);
 
 			// If elapsed time is between 1s and 2s
 			if(millis()-start >= 1000 && millis()-start <= 2000) {
@@ -155,19 +168,18 @@ void loop() {
 				Serial.print("\t");
 				Serial.print(MAX_SPEED); // [-400,400]
 				Serial.print("\t");
-				Serial.print(angVelR, 7); // Right motor velocity
+				Serial.print(angVel.R, 7); // Right motor velocity
 				Serial.print("\t");
-				Serial.print(angPosR, 7); // Right motor position
+				Serial.print(angPos.R, 7); // Right motor position
 				Serial.print("\t");
-				Serial.print(angVelL, 7); // Left motor velocity
+				Serial.print(angVel.L, 7); // Left motor velocity
 				Serial.print("\t");
-				Serial.print(angPosL, 7); // Left motor position
+				Serial.print(angPos.L, 7); // Left motor position
 				Serial.println("");
 			}
 
 			// Save positions for next loop
-			angPosR = newAngPosR;
-			angPosL = newAngPosL;
+			angPos = newAngPos;
 
 		}
 
