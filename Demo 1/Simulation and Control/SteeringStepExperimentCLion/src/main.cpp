@@ -205,8 +205,8 @@ void setMotorValues(float commandDifference, float commandSum) {
 	int targetL = 0, targetR = 0;
 	// TODO do the math on the handout to get Va,1 and Va,2 from the sum and difference
 
-
-	targetSpeed = {targetL,targetR};
+	targetSpeed = {400,400};
+	//targetSpeed = {targetL,targetR};
 }
 
 void serialEvent() {
