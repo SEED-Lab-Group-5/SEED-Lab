@@ -103,7 +103,7 @@ Pair<float> angPos, newAngPos, angVel;
 float motorDif, motorSum; // Parameters for steering
 Pair<int> targetSpeed;
 // Given the sum and difference [0,1], set the speed command of each motor
-void setMotorValues(float commandDifference, float commandSum); // TODO define this function
+void setMotorValues(float commandDifference, float commandSum);
 
 bool commandReceived = false; 	// flag for new serial input
 bool run1, run2;				// flags to indicate which experiment to run
@@ -144,7 +144,9 @@ void loop() {
 		// At 1 second, set the motor to target speed
 		if(millis()-start >= 1000 && !motorsSet) {
 			setMotorValues(0, 1);
-			motors.setSpeeds(targetSpeed.L, targetSpeed.R);
+			// The right motor needs to rotate in the opposite direction compared to the left motor.
+			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
+			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 			motorsSet = true;
 		}
 
@@ -202,10 +204,21 @@ void loop() {
 }
 
 void setMotorValues(float commandDifference, float commandSum) {
-	int targetL = 0, targetR = 0;
-	// TODO do the math on the handout to get Va,1 and Va,2 from the sum and difference
+	Pair<float> target = {0,0};
 
-	targetSpeed = {400,400};
+	// TODO do the math on the handout to get Va,1 and Va,2 from the sum and difference
+	// commandSum: A decimal value between -1 and 1 describing the proportional voltage sum applied to left and right motors
+	// (Voltage of left motor + voltage of right motor = commandSum. sum = -1 = full reverse, sum = 1 = full forward)
+	// commandDifference: A decimal value between -1 and 1 describing the proportional difference in voltages applied to left nd right motors (controls rotation, higher value =
+
+	target.R = (commandSum+commandDifference)/float(2.0);
+	target.L = (commandSum-commandDifference)/float(2.0);
+
+	// Scale the ratios to map a max of 1 to a max of 400
+	target = target * float(400);
+
+	// Set the global targetSpeed variable with the
+	targetSpeed = {int(target.L),int(target.R)};
 	//targetSpeed = {targetL,targetR};
 }
 
