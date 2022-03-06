@@ -38,7 +38,6 @@
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
 
-// TODO change motor pins if needed
 // Default pins used in DualMotorShield
 /*DualMC33926MotorShield::DualMC33926MotorShield()
  * test
@@ -71,19 +70,25 @@ struct Pair {
 };
 
 // Encoder parameters
-const float CPR = 50.0*64.0;        // Total encoder counts per revolution (CPR) of motor shaft
-// TODO assign encoder pins
-#define ENC_R_PIN_A 2       			// Right encoder output A (yellow wire, must be connected to 2 or 3 for interrupts)
-#define ENC_R_PIN_B 5       			// Right encoder output B (white wire)
-#define ENC_L_PIN_A 3					// Left encoder output A (yellow wire, must be connected to 2 or 3 for interrupts)
-#define ENC_L_PIN_B 6					// Left encoder output B (white wire)
-Encoder motorEncR(ENC_R_PIN_A, ENC_R_PIN_B); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
-Encoder motorEncL(ENC_L_PIN_A, ENC_L_PIN_B);
+const float CPR = 50.0*64.0;	// Total encoder counts per revolution (CPR) of motor shaft
+// Castor wheel is the back of the robot // TODO which end of the robot do we want to be the front??
+#define ENC_R_WHITE 2 			// Right motor encoder output B (white wire)
+#define ENC_R_YELLOW 5  		// Right motor encoder output A (yellow wire)
+#define ENC_L_WHITE 3			// Left motor encoder output B (white wire)
+#define ENC_L_YELLOW 6			// Left motor encoder output A (yellow wire)
+
+// From mini project, pin1 on the Encoder object needs to connect to the white wire on the motor encoder
+// for CCW to be positive (facing the wheel)
+// TODO I assume the castor wheel is the back
+Encoder motorEncR(ENC_R_WHITE, ENC_R_YELLOW); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
+Encoder motorEncL(ENC_L_WHITE, ENC_L_YELLOW);
 Pair<long> newPosition;     	// Current position reading (counts)
 
 
 // Experiment parameters
-DualMC33926MotorShield motors;
+DualMC33926MotorShield motors; // Motor 2 is the right wheel
+//TODO since the wheels need to spin in opposite directions to move forward,
+// should we invert the power terminals on one of the motors instead of inverting a lot of code?
 const long SAMPLE_RATE = 5;     	// Sample rate in ms
 const int MAX_SPEED = 400;   	// Desired speed. If using DualMC33926MotorShield.h: max speed = 400
 bool motorsSet = false;
@@ -96,7 +101,7 @@ Pair<float> angPos, newAngPos, angVel;
 
 // Steering
 float motorDif, motorSum; // Parameters for steering
-
+Pair<int> targetSpeed;
 // Given the sum and difference [0,1], set the speed command of each motor
 void setMotorValues(float commandDifference, float commandSum); // TODO define this function
 
@@ -139,8 +144,7 @@ void loop() {
 		// At 1 second, set the motor to target speed
 		if(millis()-start >= 1000 && !motorsSet) {
 			setMotorValues(0, 1);
-
-			motors.setSpeeds(MAX_SPEED, MAX_SPEED);
+			motors.setSpeeds(targetSpeed.L, targetSpeed.R);
 			motorsSet = true;
 		}
 
@@ -152,8 +156,11 @@ void loop() {
 
 			// Read new encoder counts from both motors
 			// One needs to be negative! CCW looking into the wheel is positive
+			// Left wheel spinning CCW and right wheel spinning CW = forward
+			// Right encoder counts need to have the opposite sign
+			// TODO should the right wheel have its power supply inverted also?
 
-			newPosition = {motorEncL.read(), -motorEncR.read()}; // Left is positive, right is negative
+			newPosition = {motorEncL.read(), -motorEncR.read()};
 
 			// Convert encoder counts to radians
 			newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * float((2.0 * PI) / CPR);
@@ -166,7 +173,7 @@ void loop() {
 				// Print elapsed time, target speed, and angular velocity for each motor
 				Serial.print(millis()-start); // elapsed time in ms
 				Serial.print("\t");
-				Serial.print(MAX_SPEED); // [-400,400]
+				Serial.print(MAX_SPEED); // [-400,400] //TODO print target values instead
 				Serial.print("\t");
 				Serial.print(angVel.R, 7); // Right motor velocity
 				Serial.print("\t");
@@ -191,11 +198,15 @@ void loop() {
 			motorEncL.write(0);
 		}
 	}
+	// TODO implement a rotation experiment
 }
 
 void setMotorValues(float commandDifference, float commandSum) {
+	int targetL = 0, targetR = 0;
+	// TODO do the math on the handout to get Va,1 and Va,2 from the sum and difference
 
 
+	targetSpeed = {targetL,targetR};
 }
 
 void serialEvent() {
