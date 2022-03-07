@@ -27,7 +27,7 @@
 //          GPIO2 (SDA) -> A4
 //          GPIO3 (SCL) -> A5
 //          GND         -> GND
-//
+// test
 // RUNNING:  Both libraries below must be installed before running this program.
 // RESOURCE: https://github.com/pololu/dual-mc33926-motor-shield
 // PURPOSE:  This provides the library "DualMC33926MotorShield.h" which simplifies motor control considerably.
