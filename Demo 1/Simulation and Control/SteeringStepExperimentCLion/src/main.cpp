@@ -10,7 +10,7 @@
 // 			 then start the Matlab script.
 // HARDWARE: Components:
 //           Arduino Uno + MC33926 motor driver shield
-//           Motor: 50:1 Metal Gearmotor 37Dx70L mm 12V with 64 CPR Encoder (Spur Pinion)
+//           Motor: 50:1 Metal Gear motor 37Dx70L mm 12V with 64 CPR Encoder (Spur Pinion)
 //           Battery: 7.2V capable of 3.2A
 //           Voltage Regulator: HCW-M635
 //
@@ -23,7 +23,7 @@
 //              - Connect Arduino pins 2 and 3 (both interrupt pins) to white and yellow pins on the motor cable as the encoder pins
 //
 //          I2C Connection Guide:
-//          Rasberryi Pi | Arduino
+//          Raspberry Pi | Arduino
 //          GPIO2 (SDA) -> A4
 //          GPIO3 (SCL) -> A5
 //          GND         -> GND
@@ -40,7 +40,6 @@
 
 // Default pins used in DualMotorShield
 /*DualMC33926MotorShield::DualMC33926MotorShield()
- * test
 {
   //Pin map
   _nD2 = 4;
@@ -70,44 +69,43 @@ struct Pair {
 };
 
 // Encoder parameters
-const float CPR = 50.0*64.0;	// Total encoder counts per revolution (CPR) of motor shaft
-// Castor wheel is the back of the robot // TODO which end of the robot do we want to be the front??
-#define ENC_R_WHITE 2 			// Right motor encoder output B (white wire)
-#define ENC_R_YELLOW 5  		// Right motor encoder output A (yellow wire)
-#define ENC_L_WHITE 3			// Left motor encoder output B (white wire)
-#define ENC_L_YELLOW 6			// Left motor encoder output A (yellow wire)
+const float CPR = 50.0*64.0;	//!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
+#define ENC_R_WHITE 2 			//!< Right motor encoder output B (white wire)
+#define ENC_R_YELLOW 5  		//!< Right motor encoder output A (yellow wire)
+#define ENC_L_WHITE 3			//!< Left motor encoder output B (white wire)
+#define ENC_L_YELLOW 6			//!< Left motor encoder output A (yellow wire)
 
 // From mini project, pin1 on the Encoder object needs to connect to the white wire on the motor encoder
 // for CCW to be positive (facing the wheel)
-// TODO I assume the castor wheel is the back
-Encoder motorEncR(ENC_R_WHITE, ENC_R_YELLOW); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
-Encoder motorEncL(ENC_L_WHITE, ENC_L_YELLOW);
-Pair<long> newPosition;     	// Current position reading (counts)
-
+// 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
+Encoder motorEncR(ENC_R_WHITE, ENC_R_YELLOW); //!< Right motor encoder
+Encoder motorEncL(ENC_L_WHITE, ENC_L_YELLOW); //!< Left motor encoder
 
 // Experiment parameters
-DualMC33926MotorShield motors; // Motor 2 is the right wheel
-//TODO since the wheels need to spin in opposite directions to move forward,
-// should we invert the power terminals on one of the motors instead of inverting a lot of code?
-const long SAMPLE_RATE = 5;     	// Sample rate in ms
-const int MAX_SPEED = 400;   	// Desired speed. If using DualMC33926MotorShield.h: max speed = 400
-bool motorsSet = false;
-unsigned long now = 0;    			// Elapsed time in ms
-unsigned long start = 0;  			// Experiment start time
-Pair<float> angPos, newAngPos, angVel;
-//volatile float angPos.R = 0, angPos.L = 0;     		// position relative to initial position (radians)
-//volatile float newAngPos.R = 0, newAngPos.L = 0;     // current position relative to initial position (radians)
-//volatile float angVel.R = 0, angVel.L = 0;     		// Current angular velocity (rad/s)
+DualMC33926MotorShield motors; 	//!< Motor 2 is the right wheel
+const long SAMPLE_RATE = 5;     //!< Period to wait before measuring and sending new data
+const int MAX_SPEED = 400;   	//!< Maximum scaled PWM (if using DualMC33926MotorShield.h, max = 400)
+bool motorsSet = false;			//!< Flag indicating if the motors were set to target speeds
+unsigned long now = 0;    		//!< Experiment elapsed time (ms)
+unsigned long start = 0;  		//!< Experiment start time (ms)
+Pair<float> angPos;				//!< PREVIOUS wheel positions (radians)
+Pair<float> newAngPos;			//!< CURRENT wheel positions (radians)
+Pair<long> newPosition;     	//!< CURRENT wheel encoder readings (counts)
+Pair<float> angVel;				//!< Wheel angular velocities (rad/s)
 
 // Steering
-float motorDif, motorSum; // Parameters for steering
-Pair<int> targetSpeed;
-// Given the sum and difference [0,1], set the speed command of each motor
+float motorDif, motorSum; 		//!< Parameters for steering
+Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() ranging from -400 to 400
+/**
+ * setMotorValues() sets the target motor PWM speeds based on commandDifference and commandSum
+ * @param commandDifference [in] ∆Va = the desired difference of targetSpeed.L and targetSpeed.R between 0 and 1
+ * @param commandSum [in] |Va| = the desired sum of targetSpeed.L and targetSpeed.R between 0 and 1
+ */
 void setMotorValues(float commandDifference, float commandSum);
 
-bool commandReceived = false; 	// flag for new serial input
-bool run1, run2;				// flags to indicate which experiment to run
-String InputString = ""; 		// a string to hold incoming data
+bool commandReceived = false; 	//!< flag for new serial input
+bool run1, run2;				//!< flags to indicate which experiment to run
+String InputString = ""; 		//!< a string to hold incoming data
 
 void setup() {
 
@@ -119,27 +117,27 @@ void setup() {
 }
 
 void loop() {
-	// Change behavior based on serial input
+	// Change behavior based on serial input from Matlab
 	if (commandReceived) {
 		switch (InputString.charAt(0)) {
-			case '1':
+			case '1': // Run experiment 1 (full forward)
 				run1 = true;
 				run2 = false;
 				start = millis();
 				break;
-			case '2':
+			case '2': // Run experiment 2 (full rotation)
 				run1 = false;
 				run2 = true;
 				start = millis();
-			case 'E':
+			case 'E': // End all experiments
 				run1 = false;
 				run2 = false;
 				break;
-
 		}
 		commandReceived = false;
 	}
 
+	// Experiment 1
 	if(run1) {
 		// At 1 second, set the motor to target speed
 		if(millis()-start >= 1000 && !motorsSet) {
@@ -200,11 +198,15 @@ void loop() {
 			motorEncL.write(0);
 		}
 	}
-	// TODO implement a rotation experiment
-}
+	// Experiment 2
+	if(run2) {
+		// TODO implement a rotation experiment
+	}
+
+} // End Loop()
 
 void setMotorValues(float commandDifference, float commandSum) {
-	Pair<float> target = {0,0};
+	Pair<float> target = {0,0}; //!< Motor PWM outputs
 
 	// TODO do the math on the handout to get Va,1 and Va,2 from the sum and difference
 	// commandSum: A decimal value between -1 and 1 describing the proportional voltage sum applied to left and right motors
@@ -222,16 +224,16 @@ void setMotorValues(float commandDifference, float commandSum) {
 	//targetSpeed = {targetL,targetR};
 }
 
+//!< Reads data sent over serial from Matlab
 void serialEvent() {
 	while (Serial.available()) {
-		// get the new byte:
-		char inChar = (char)Serial.read();
-		// add it to the inputString:
-		InputString += inChar;
-		// if the incoming character is a newline, set a flag
-		// so the main loop can do something about it:
+		char inChar = (char)Serial.read(); // get the new byte:
+		InputString += inChar; // add it to the inputString:
+		// if the incoming character is a newline, set commandReceived = true
+		// so the main loop can do something about it.
 		if (inChar == '\n') {
 			commandReceived = true;
 		}
 	}
 }
+
