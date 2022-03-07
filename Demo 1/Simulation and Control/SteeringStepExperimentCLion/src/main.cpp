@@ -92,6 +92,15 @@ Pair<float> angPos;				//!< PREVIOUS wheel positions (radians)
 Pair<float> newAngPos;			//!< CURRENT wheel positions (radians)
 Pair<long> newPosition;     	//!< CURRENT wheel encoder readings (counts)
 Pair<float> angVel;				//!< Wheel angular velocities (rad/s)
+unsigned long oldTime = 0;
+float rho_dot = 0;
+float phi_dot = 0;
+volatile float distanceLeft = 0;
+volatile float distanceRight = 0;
+const float WHEEL_RADIUS = 2.9375;              //Radius of wheel in inches
+const float WHEELBASE = 13.25;                  //Wheelbase measurement in inches
+int nLeft = 1;
+int nRight = 1;
 
 // Steering
 float motorDif, motorSum; 		//!< Parameters for steering
@@ -164,29 +173,39 @@ void loop() {
 
 			// Convert encoder counts to radians
 			newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * float((2.0 * PI) / CPR);
+			if(abs(newPosition.R) > CPR){
+				nRight = 1+int(floorf(abs(newPosition.R)/(CPR)));
+			}else if(abs(newPosition.L) > CPR){
+				nLeft = 1+int(floorf(abs(newPosition.L)/(CPR)));
+			}
 
 			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
-			angVel = ((newAngPos - angPos) * float(1000) ) / float(SAMPLE_RATE);
+			angVel = ((newAngPos - angPos) * float(1000) ) / float(millis()-oldTime);
+
+			rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2;
+			phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
+
+			distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
+			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
 
 			// If elapsed time is between 1s and 2s
 			if(millis()-start >= 1000 && millis()-start <= 2000) {
 				// Print elapsed time, target speed, and angular velocity for each motor
 				Serial.print(millis()-start); // elapsed time in ms
 				Serial.print("\t");
-				Serial.print(MAX_SPEED); // [-400,400] //TODO print target values instead
+				Serial.print(1); // commandSum
 				Serial.print("\t");
-				Serial.print(angVel.R, 7); // Right motor velocity
+				Serial.print(0, 7); // commandDiff
 				Serial.print("\t");
-				Serial.print(angPos.R, 7); // Right motor position
+				Serial.print(rho_dot, 7); // forward velocity
 				Serial.print("\t");
-				Serial.print(angVel.L, 7); // Left motor velocity
-				Serial.print("\t");
-				Serial.print(angPos.L, 7); // Left motor position
+				Serial.print(phi_dot, 7); // Rotational velocity
 				Serial.println("");
 			}
 
 			// Save positions for next loop
 			angPos = newAngPos;
+			oldTime = millis();
 
 		}
 
@@ -196,11 +215,81 @@ void loop() {
 			motors.setSpeeds(0,0);
 			motorEncR.write(0);  // Reset encoders
 			motorEncL.write(0);
+			run1 = false;
+			start = millis(); // reset start time
 		}
 	}
 	// Experiment 2
 	if(run2) {
-		// TODO implement a rotation experiment
+		// At 1 second, set the motor to target speed
+		if(millis()-start >= 1000 && !motorsSet) {
+			setMotorValues(1, 0);
+			// The right motor needs to rotate in the opposite direction compared to the left motor.
+			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
+			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
+			motorsSet = true;
+		}
+
+		// Get new data every SAMPLE_TIME ms
+		if (millis()-start >= now + SAMPLE_RATE) {
+
+			// Adjust elapsed time
+			now += SAMPLE_RATE;
+
+			// Read new encoder counts from both motors
+			// One needs to be negative! CCW looking into the wheel is positive
+			// Left wheel spinning CCW and right wheel spinning CW = forward
+			// Right encoder counts need to have the opposite sign
+			// TODO should the right wheel have its power supply inverted also?
+
+			newPosition = {motorEncL.read(), -motorEncR.read()};
+
+			// Convert encoder counts to radians
+			newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * float((2.0 * PI) / CPR);
+			if(abs(newPosition.R) > CPR){
+				nRight = 1+int(floorf(abs(newPosition.R)/(CPR)));
+			}else if(abs(newPosition.L) > CPR){
+				nLeft = 1+int(floorf(abs(newPosition.L)/(CPR)));
+			}
+
+			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
+			angVel = ((newAngPos - angPos) * float(1000) ) / float(millis()-oldTime);
+
+			rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2;
+			phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
+
+			distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
+			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
+
+			// If elapsed time is between 1s and 2s
+			if(millis()-start >= 1000 && millis()-start <= 2000) {
+				// Print elapsed time, target speed, and angular velocity for each motor
+				Serial.print(millis()-start); // elapsed time in ms
+				Serial.print("\t");
+				Serial.print(1); // commandSum
+				Serial.print("\t");
+				Serial.print(0, 7); // commandDiff
+				Serial.print("\t");
+				Serial.print(rho_dot, 7); // forward velocity
+				Serial.print("\t");
+				Serial.print(phi_dot, 7); // Rotational velocity
+				Serial.println("");
+			}
+
+			// Save positions for next loop
+			angPos = newAngPos;
+			oldTime = millis();
+
+		}
+
+		// After 2s, turn off the motors and tell Matlab the experiment is done.
+		if(millis()-start > 2000) {
+			Serial.println("Finished");
+			motors.setSpeeds(0,0);
+			motorEncR.write(0);  // Reset encoders
+			motorEncL.write(0);
+
+		}
 	}
 
 } // End Loop()
@@ -220,8 +309,9 @@ void setMotorValues(float commandDifference, float commandSum) {
 	target = target * float(400);
 
 	// Set the global targetSpeed variable with the
-	targetSpeed = {int(target.L),int(target.R)};
-	//targetSpeed = {targetL,targetR};
+	//targetSpeed = {int(target.L),int(target.R)};
+	targetSpeed = {int(400),int(400)};
+	// targetSpeed = {,targetR};
 }
 
 //!< Reads data sent over serial from Matlab
