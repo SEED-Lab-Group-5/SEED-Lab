@@ -92,7 +92,7 @@ Pair<float> angPos;				//!< PREVIOUS wheel positions (radians)
 Pair<float> newAngPos;			//!< CURRENT wheel positions (radians)
 Pair<long> newPosition;     	//!< CURRENT wheel encoder readings (counts)
 Pair<float> angVel;				//!< Wheel angular velocities (rad/s)
-unsigned long oldTime = 0;
+unsigned long oldTime = 0;		//test
 unsigned long currentTime = 0;
 float rho_dot = 0;
 float phi_dot = 0;
