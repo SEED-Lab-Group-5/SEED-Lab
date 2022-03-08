@@ -17,8 +17,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5366b6ee-0032-4496-b7d7-6902eec1b1ab" name="Changes" comment="saving what I have so far for finding current position">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindTf.mlx" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindTf.mlx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindRobotTf.mlx" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindRobotTf.mlx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Simulation and Control/Experiments/steerData.mat" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/Experiments/steerData.mat" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Simulation and Control/SteeringStepExperimentCLion/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/SteeringStepExperimentCLion/src/main.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -55,7 +57,6 @@
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
     <property name="cmake.loaded.for.project" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
@@ -97,8 +98,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1646603471480</updated>
-      <workItem from="1646603473627" duration="20571000" />
-      <workItem from="1646685984854" duration="1074000" />
+      <workItem from="1646603473627" duration="22231000" />
+      <workItem from="1646769964370" duration="3982000" />
     </task>
     <task id="LOCAL-00001" summary="saving what I have so far for finding current position">
       <created>1646625473069</created>

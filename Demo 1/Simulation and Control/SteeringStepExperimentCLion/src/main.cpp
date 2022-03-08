@@ -88,11 +88,12 @@ const int MAX_SPEED = 400;   	//!< Maximum scaled PWM (if using DualMC33926Motor
 bool motorsSet = false;			//!< Flag indicating if the motors were set to target speeds
 unsigned long now = 0;    		//!< Experiment elapsed time (ms)
 unsigned long start = 0, start2 = 0;  		//!< Experiment start time (ms)
+unsigned long timeOfSample = 0, timeOfLastSample = 0; //!< For calculating ∆t (us)
 Pair<float> angPos;				//!< PREVIOUS wheel positions (radians)
 Pair<float> newAngPos;			//!< CURRENT wheel positions (radians)
 Pair<long> newPosition;     	//!< CURRENT wheel encoder readings (counts)
 Pair<float> angVel;				//!< Wheel angular velocities (rad/s)
-unsigned long oldTime = 0;		//test
+unsigned long oldTime = 0;
 unsigned long currentTime = 0;
 float rho_dot = 0;
 float phi_dot = 0;
@@ -124,6 +125,8 @@ void setup() {
 	motors.init();                       // Initialize motor
 	motors.setSpeeds(0, 0);         // Set motor A and B speeds to 0
 	Serial.println("Start!");           // Tell Matlab that Arduino is ready
+	now = millis();
+	start = millis();
 }
 
 void loop() {
@@ -159,6 +162,7 @@ void loop() {
 			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
 			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 			motorsSet = true;
+			timeOfLastSample = micros(); // TODO when should this be set?
 		}
 
 		// Get new data every SAMPLE_TIME ms
@@ -171,39 +175,43 @@ void loop() {
 			// One needs to be negative! CCW looking into the wheel is positive
 			// Left wheel spinning CCW and right wheel spinning CW = forward
 			// Right encoder counts need to have the opposite sign
-			// TODO should the right wheel have its power supply inverted also?
-
+			timeOfSample = micros();
 			newPosition = {motorEncL.read(), -motorEncR.read()};
 
 			// Convert encoder counts to radians
 			newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * float((2.0 * PI) / CPR);
+
 			if(abs(newPosition.R) > CPR){
 				nRight = 1+int(floorf(abs(newPosition.R)/(CPR)));
 			}else if(abs(newPosition.L) > CPR){
 				nLeft = 1+int(floorf(abs(newPosition.L)/(CPR)));
 			}
 
-			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
-			angVel = ((newAngPos - angPos) * float(1000) ) / float(millis()-oldTime);
 
-			rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2;
+			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
+			angVel = (newAngPos - angPos)  / float(timeOfSample-timeOfLastSample);
+
+			// TODO is there a more accurate way to find rho_dot?
+			rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))*float(0.5); // Issue with integer division?
+			// TODO units of rho_dot are rad*inch/s, not inch/s
+			// TODO need to 
 			phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
 
-			distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
-			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
+			//distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
+			//distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
 
 			// If elapsed time is between 1s and 2s
 			if(millis() - start >= 1000 && millis() - start <= 2000) {
 				// Print elapsed time, target speed, and angular velocity for each motor
 				Serial.print(millis() - start); // elapsed time in ms
 				Serial.print("\t");
-				Serial.print(1); // commandSum
+//				Serial.print(1); // commandSum
+//				Serial.print("\t");
+//				Serial.print(0); // commandDiff
+//				Serial.print("\t");
+				Serial.print(rho_dot); // forward velocity
 				Serial.print("\t");
-				Serial.print(0, 7); // commandDiff
-				Serial.print("\t");
-				Serial.print(rho_dot, 7); // forward velocity
-				Serial.print("\t");
-				Serial.print(phi_dot, 7); // Rotational velocity
+				Serial.print(phi_dot); // Rotational velocity
 				Serial.println("");
 			}
 

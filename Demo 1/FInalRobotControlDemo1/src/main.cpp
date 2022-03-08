@@ -149,7 +149,21 @@ float phi_Kp = 50;      //starting untuned at 50
 float phi_PD = 0;
 float phi_D = 0;
 int motorSpeed;
+int phiMotorChange = 0;
 ///control variable = speed passed to motor control function??
+
+///Variables for PD for distance forward
+float desiredForwardMotion = 0;            //units should be in inches
+float currentForwardMotion = 0;
+float rhoNewError = 0;
+float rhoOldError = 0;
+float rhoAngle = 0;
+float rho_Kd = 30;      //starting untuned at 30
+float rho_Kp = 50;      //starting untuned at 50
+float rho_PD = 0;
+float rho_D = 0;
+int rhoMotorChange = 0;
+
 
 //void readEnc();
 
@@ -186,67 +200,93 @@ void loop() {
 
     currentEncR = motorEncR.read();
     currentEncL = motorEncL.read();
-    if(abs(currentEncR) > CPR){
-        nRight = 1+int(floorf(abs(currentEncR)/(CPR)));
-    }else if(abs(currentEncL) > CPR){
-        nLeft = 1+int(floorf(abs(currentEncL)/(CPR)));
+    if (abs(currentEncR) > CPR) {
+        nRight = 1 + int(floorf(abs(currentEncR) / (CPR)));
+    } else if (abs(currentEncL) > CPR) {
+        nLeft = 1 + int(floorf(abs(currentEncL) / (CPR)));
     }
 
-    newAngPosR = -(2*PI*(currentEncR)/CPR);                        ////Inversion occurs Here with negative sign
-    newAngPosL = (2*PI*(currentEncL)/CPR);
+    newAngPosR = -(2 * PI * (currentEncR) / CPR);                        ////Inversion occurs Here with negative sign
+    newAngPosL = (2 * PI * (currentEncL) / CPR);
 
-    angVelR = 1000*((newAngPosR-oldAngPosR)/((millis()-oldTime)));
-    angVelL = 1000*((newAngPosL-oldAngPosL)/((millis()-oldTime)));
+    angVelR = 1000 * ((newAngPosR - oldAngPosR) / ((millis() - oldTime)));
+    angVelL = 1000 * ((newAngPosL - oldAngPosL) / ((millis() - oldTime)));
 
-    rho_dot = (WHEEL_RADIUS*(angVelL + angVelR))/2;
-    phi_dot = (WHEEL_RADIUS*(angVelL - angVelR))/WHEELBASE;
+    rho_dot = (WHEEL_RADIUS * (angVelL + angVelR)) / 2;
+    phi_dot = (WHEEL_RADIUS * (angVelL - angVelR)) / WHEELBASE;
 
-    distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
-    distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
+    distanceRight = nRight * 2 * PI * pow(WHEEL_RADIUS, 2);
+    distanceLeft = nLeft * 2 * PI * pow(WHEEL_RADIUS, 2);
 
 
     //keep track of current angle
-    currentPhi = oldPhi + ((WHEEL_RADIUS/WHEELBASE)*(distanceLeft - distanceRight));
+    currentPhi = oldPhi + ((WHEEL_RADIUS / WHEELBASE) * (distanceLeft - distanceRight));    //eq from Assignment 2: Localization
     oldPhi = currentPhi;
 
     //TODO have turn and distance control variables add or subtract to the motorSpeed
-    //TODO have
-    ////Trevors attempt at a PD implementation
-    if(desiredAngle > currentPhi) {
 
-        angleNewError = desiredAngle - currentPhi;
-        phi_D = angleNewError - angleOldError;
-        phi_PD = (phi_Kp * angleNewError) + (phi_Kd * phi_D);
-        motorSpeed = int(400*phi_PD);
-        if (motorSpeed>400){
-            motorSpeed = 400;
-        }else if (motorSpeed<-400){
-            motorSpeed = -400;
+    ////Trevors attempt at a PD implementation - this method may only be good for Demo1
+
+    while (desiredAngle != currentPhi) {
+        if (desiredAngle > currentPhi) {
+
+            angleNewError = desiredAngle - currentPhi;
+            phi_D = angleNewError - angleOldError;
+            phi_PD = (phi_Kp * angleNewError) + (phi_Kd * phi_D);
+
+
+            phiMotorChange = int(400 * phi_PD);
+            if (phiMotorChange > 400) {
+                phiMotorChange = 400;
+            } else if (phiMotorChange < -400) {
+                phiMotorChange = -400;
+            }
+            motors.setM1Speed(motorSpeed + phiMotorChange);
+            motors.setM2Speed(motorSpeed - phiMotorChange);
+            angleOldError = angleNewError;
         }
-        motors.setM1Speed(motorSpeed);
-        motors.setM2Speed(-motorSpeed);
+        if (desiredAngle < currentPhi) {
+
+            angleNewError = desiredAngle - currentPhi;
+            phi_D = angleNewError - angleOldError;
+            phi_PD = (phi_Kp * angleNewError) + (phi_Kd * phi_D);
+
+
+            phiMotorChange = int(400 * phi_PD);
+            if (phiMotorChange > 400) {
+                phiMotorChange = 400;
+            } else if (phiMotorChange < -400) {
+                phiMotorChange = -400;
+            }
+            motors.setM1Speed(motorSpeed - phiMotorChange);
+            motors.setM2Speed(motorSpeed + phiMotorChange);
+            angleOldError = angleNewError;
+        }
+
+        ///ends here
+        oldAngPosR = newAngPosR;
+        oldAngPosL = newAngPosL;
+        oldTime = millis();
+    }
+
+
+    ////controller for movement forward - this method may only be good for Demo1
+    while(currentForwardMotion != desiredForwardMotion){
+        rhoNewError = desiredForwardMotion - currentForwardMotion;
+        rho_D = rhoNewError - rhoOldError;
+        rho_PD = (rho_Kp * rhoNewError) + (rho_Kd * rho_D);
+
+
+        rhoMotorChange = int(400 * phi_PD);
+        if (rhoMotorChange > 400) {
+            rhoMotorChange = 400;
+        } else if (rhoMotorChange < -400) {
+            rhoMotorChange = -400;
+        }
+        motors.setM1Speed(motorSpeed + rhoMotorChange);
+        motors.setM2Speed(motorSpeed + rhoMotorChange);
         angleOldError = angleNewError;
     }
-    if(desiredAngle < currentPhi) {
-
-        angleNewError = desiredAngle - currentPhi;
-        phi_D = angleNewError - angleOldError;
-        phi_PD = (phi_Kp * angleNewError) + (phi_Kd * phi_D);
-        motorSpeed = int(400*phi_PD);
-        if (motorSpeed>400){
-            motorSpeed = 400;
-        }else if (motorSpeed<-400){
-            motorSpeed = -400;
-        }
-        motors.setM1Speed(-motorSpeed);
-        motors.setM2Speed(motorSpeed);
-        angleOldError = angleNewError;
-    }
-
-    ///ends here
-    oldAngPosR = newAngPosR;
-    oldAngPosL = newAngPosL;
-    oldTime = millis();
 }
 
 ////Attempting to make encoder readings a simple function call
