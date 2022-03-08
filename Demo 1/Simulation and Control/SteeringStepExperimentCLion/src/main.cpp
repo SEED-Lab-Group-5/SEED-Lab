@@ -87,12 +87,13 @@ const long SAMPLE_RATE = 5;     //!< Period to wait before measuring and sending
 const int MAX_SPEED = 400;   	//!< Maximum scaled PWM (if using DualMC33926MotorShield.h, max = 400)
 bool motorsSet = false;			//!< Flag indicating if the motors were set to target speeds
 unsigned long now = 0;    		//!< Experiment elapsed time (ms)
-unsigned long start = 0;  		//!< Experiment start time (ms)
+unsigned long start = 0, start2 = 0;  		//!< Experiment start time (ms)
 Pair<float> angPos;				//!< PREVIOUS wheel positions (radians)
 Pair<float> newAngPos;			//!< CURRENT wheel positions (radians)
 Pair<long> newPosition;     	//!< CURRENT wheel encoder readings (counts)
 Pair<float> angVel;				//!< Wheel angular velocities (rad/s)
 unsigned long oldTime = 0;
+unsigned long currentTime = 0;
 float rho_dot = 0;
 float phi_dot = 0;
 volatile float distanceLeft = 0;
@@ -113,7 +114,7 @@ Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() rang
 void setMotorValues(float commandDifference, float commandSum);
 
 bool commandReceived = false; 	//!< flag for new serial input
-bool run1, run2;				//!< flags to indicate which experiment to run
+bool run1 = false, run2 = false;				//!< flags to indicate which experiment to run
 String InputString = ""; 		//!< a string to hold incoming data
 
 void setup() {
@@ -122,7 +123,7 @@ void setup() {
 	InputString.reserve(200);      // reserve 200 bytes for the inputString
 	motors.init();                       // Initialize motor
 	motors.setSpeeds(0, 0);         // Set motor A and B speeds to 0
-	Serial.println("Ready!");           // Tell Matlab that Arduino is ready
+	Serial.println("Start!");           // Tell Matlab that Arduino is ready
 }
 
 void loop() {
@@ -132,15 +133,18 @@ void loop() {
 			case '1': // Run experiment 1 (full forward)
 				run1 = true;
 				run2 = false;
-				start = millis();
+				motorsSet = false;
 				break;
 			case '2': // Run experiment 2 (full rotation)
 				run1 = false;
 				run2 = true;
-				start = millis();
+				motorsSet = false;
+				start2 = millis();
+				break;
 			case 'E': // End all experiments
 				run1 = false;
 				run2 = false;
+				motorsSet = false;
 				break;
 		}
 		commandReceived = false;
@@ -149,7 +153,7 @@ void loop() {
 	// Experiment 1
 	if(run1) {
 		// At 1 second, set the motor to target speed
-		if(millis()-start >= 1000 && !motorsSet) {
+		if(millis() - start >= 1000 && !motorsSet) {
 			setMotorValues(0, 1);
 			// The right motor needs to rotate in the opposite direction compared to the left motor.
 			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
@@ -158,7 +162,7 @@ void loop() {
 		}
 
 		// Get new data every SAMPLE_TIME ms
-		if (millis()-start >= now + SAMPLE_RATE) {
+		if (millis() - start >= now + SAMPLE_RATE) {
 
 			// Adjust elapsed time
 			now += SAMPLE_RATE;
@@ -189,9 +193,9 @@ void loop() {
 			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
 
 			// If elapsed time is between 1s and 2s
-			if(millis()-start >= 1000 && millis()-start <= 2000) {
+			if(millis() - start >= 1000 && millis() - start <= 2000) {
 				// Print elapsed time, target speed, and angular velocity for each motor
-				Serial.print(millis()-start); // elapsed time in ms
+				Serial.print(millis() - start); // elapsed time in ms
 				Serial.print("\t");
 				Serial.print(1); // commandSum
 				Serial.print("\t");
@@ -210,19 +214,21 @@ void loop() {
 		}
 
 		// After 2s, turn off the motors and tell Matlab the experiment is done.
-		if(millis()-start > 2000) {
-			Serial.println("Finished");
+		if(millis() - start > 2000 && run1) {
+			Serial.println("Finished1");
 			motors.setSpeeds(0,0);
 			motorEncR.write(0);  // Reset encoders
 			motorEncL.write(0);
 			run1 = false;
-			start = millis(); // reset start time
+			//Serial.println("Next!");           // Tell Matlab that Arduino is ready
+			//now = 0;
 		}
 	}
 	// Experiment 2
-	if(run2) {
+	else if(run2) {
+
 		// At 1 second, set the motor to target speed
-		if(millis()-start >= 1000 && !motorsSet) {
+		if(millis()-start2 >= 1000 && !motorsSet) {
 			setMotorValues(1, 0);
 			// The right motor needs to rotate in the opposite direction compared to the left motor.
 			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
@@ -230,65 +236,66 @@ void loop() {
 			motorsSet = true;
 		}
 
-		// Get new data every SAMPLE_TIME ms
-		if (millis()-start >= now + SAMPLE_RATE) {
+		// Read new encoder counts from both motors
+		// One needs to be negative! CCW looking into the wheel is positive
+		// Left wheel spinning CCW and right wheel spinning CW = forward
+		// Right encoder counts need to have the opposite sign
+		// TODO should the right wheel have its power supply inverted also?
+		currentTime = millis();
+		newPosition = {motorEncL.read(), -motorEncR.read()};
 
-			// Adjust elapsed time
+		// Convert encoder counts to radians
+		newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * float((2.0 * PI) / CPR);
+		if(abs(newPosition.R) > CPR){
+			nRight = 1+int(floorf(abs(newPosition.R)/(CPR)));
+		}else if(abs(newPosition.L) > CPR){
+			nLeft = 1+int(floorf(abs(newPosition.L)/(CPR)));
+		}
+
+		// Find current angular velocities in rad/s: (x2 - x1) / ∆t
+		angVel = ((newAngPos - angPos) * float(1000)* float(1000) ) / float(micros()-oldTime);
+
+		rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2;
+		phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
+
+		distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
+		distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
+
+		// Print new data every sample time
+		if (currentTime -start2 >= now + SAMPLE_RATE) {
+			// Save the time we're printing
 			now += SAMPLE_RATE;
-
-			// Read new encoder counts from both motors
-			// One needs to be negative! CCW looking into the wheel is positive
-			// Left wheel spinning CCW and right wheel spinning CW = forward
-			// Right encoder counts need to have the opposite sign
-			// TODO should the right wheel have its power supply inverted also?
-
-			newPosition = {motorEncL.read(), -motorEncR.read()};
-
-			// Convert encoder counts to radians
-			newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * float((2.0 * PI) / CPR);
-			if(abs(newPosition.R) > CPR){
-				nRight = 1+int(floorf(abs(newPosition.R)/(CPR)));
-			}else if(abs(newPosition.L) > CPR){
-				nLeft = 1+int(floorf(abs(newPosition.L)/(CPR)));
-			}
-
-			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
-			angVel = ((newAngPos - angPos) * float(1000) ) / float(millis()-oldTime);
-
-			rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2;
-			phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
-
-			distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
-			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
-
 			// If elapsed time is between 1s and 2s
-			if(millis()-start >= 1000 && millis()-start <= 2000) {
+			if(currentTime-start2 >= 1000 && currentTime-start2 <= 2000) {
 				// Print elapsed time, target speed, and angular velocity for each motor
-				Serial.print(millis()-start); // elapsed time in ms
+				Serial.print(millis()-start2); // elapsed time in ms
 				Serial.print("\t");
-				Serial.print(1); // commandSum
+				Serial.print(0); // commandSum
 				Serial.print("\t");
-				Serial.print(0, 7); // commandDiff
+				Serial.print(1); // commandDiff
 				Serial.print("\t");
 				Serial.print(rho_dot, 7); // forward velocity
 				Serial.print("\t");
 				Serial.print(phi_dot, 7); // Rotational velocity
 				Serial.println("");
 			}
-
-			// Save positions for next loop
-			angPos = newAngPos;
-			oldTime = millis();
-
 		}
 
+		// Save positions for next loop
+		angPos = newAngPos;
+		oldTime = micros();
+
+
 		// After 2s, turn off the motors and tell Matlab the experiment is done.
-		if(millis()-start > 2000) {
-			Serial.println("Finished");
+		if(currentTime-start2 > 2000 && run2) {
+			run2 = false;
+			Serial.println("Finished2");
 			motors.setSpeeds(0,0);
 			motorEncR.write(0);  // Reset encoders
 			motorEncL.write(0);
-
+			// Serial.println("Next!");           // Tell Matlab that Arduino is ready
+			//now = 0;
+			//start2 = millis();
 		}
 	}
 
@@ -302,15 +309,15 @@ void setMotorValues(float commandDifference, float commandSum) {
 	// (Voltage of left motor + voltage of right motor = commandSum. sum = -1 = full reverse, sum = 1 = full forward)
 	// commandDifference: A decimal value between -1 and 1 describing the proportional difference in voltages applied to left nd right motors (controls rotation, higher value =
 
-	target.R = (commandSum+commandDifference)/float(2.0);
-	target.L = (commandSum-commandDifference)/float(2.0);
+	target.R = (commandSum-commandDifference)/float(2.0);
+	target.L = (commandSum+commandDifference)/float(2.0);
 
 	// Scale the ratios to map a max of 1 to a max of 400
 	target = target * float(400);
 
 	// Set the global targetSpeed variable with the
-	//targetSpeed = {int(target.L),int(target.R)};
-	targetSpeed = {int(400),int(400)};
+	targetSpeed = {int(target.L),int(target.R)};
+	//targetSpeed = {int(400),int(400)};
 	// targetSpeed = {,targetR};
 }
 
