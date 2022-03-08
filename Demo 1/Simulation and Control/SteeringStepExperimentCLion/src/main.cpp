@@ -1,38 +1,38 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// NAME:     Alex Curtis (Primary Author)
-// CLASS:	 EENG-350
-// GROUP:    5
-// TITLE:    Steering Control - Step Response Experiment
-//
-// FUNCTION: This program runs a step response experiment on a motor and outputs the results over serial.
-// 		     Sends a motor speed command of 0, then TARGET_SPEED after 1 second
-// SOFTWARE: Requires matlab file "ArduinoFindTf.mlx" To run the experiment, upload this program to the Arduino,
-// 			 then start the Matlab script.
-// HARDWARE: Components:
-//           Arduino Uno + MC33926 motor driver shield
-//           Motor: 50:1 Metal Gear motor 37Dx70L mm 12V with 64 CPR Encoder (Spur Pinion)
-//           Battery: 7.2V capable of 3.2A
-//           Voltage Regulator: HCW-M635
-//
-//           Arduino and Motor Controller Connection Guide:
-//              - Power Arduino through USB
-//              - Power MC33926 through Input phoenix connector from output of voltage regulator
-//              - Power in to the voltage regulator from the battery
-//              - Connect M1 output phoenix connector to the black and red pins on the motor
-//              - Connect 5V+(Blue) and GND(Green) to the center two pins of the motor cable to power the encoder
-//              - Connect Arduino pins 2 and 3 (both interrupt pins) to white and yellow pins on the motor cable as the encoder pins
-//
-//          I2C Connection Guide:
-//          Raspberry Pi | Arduino
-//          GPIO2 (SDA) -> A4
-//          GPIO3 (SCL) -> A5
-//          GND         -> GND
-// test
-// RUNNING:  Both libraries below must be installed before running this program.
-// RESOURCE: https://github.com/pololu/dual-mc33926-motor-shield
-// PURPOSE:  This provides the library "DualMC33926MotorShield.h" which simplifies motor control considerably.
-// RESOURCE: https://www.pjrc.com/teensy/td_libs_Encoder.html
-// PURPOSE:  This is the "Encoder.h" library used to read the encoders on the motor to determine position.
+/* NAME:     Alex Curtis (Primary Author)
+ CLASS:	 EENG-350
+ GROUP:    5
+ TITLE:    Steering Control - Step Response Experiment
+
+ FUNCTION: This program runs a step response experiment on a motor and outputs the results over serial.
+ 		     Sends a motor speed command of 0, then TARGET_SPEED after 1 second
+ SOFTWARE: Requires matlab file "ArduinoFindTf.mlx" To run the experiment, upload this program to the Arduino,
+ 			 then start the Matlab script.
+ HARDWARE: Components:
+           Arduino Uno + MC33926 motor driver shield
+           Motor: 50:1 Metal Gear motor 37Dx70L mm 12V with 64 CPR Encoder (Spur Pinion)
+           Battery: 7.2V capable of 3.2A
+           Voltage Regulator: HCW-M635
+
+           Arduino and Motor Controller Connection Guide:
+              - Power Arduino through USB
+              - Power MC33926 through Input phoenix connector from output of voltage regulator
+              - Power in to the voltage regulator from the battery
+              - Connect M1 output phoenix connector to the black and red pins on the motor
+              - Connect 5V+(Blue) and GND(Green) to the center two pins of the motor cable to power the encoder
+              - Connect Arduino pins 2 and 3 (both interrupt pins) to white and yellow pins on the motor cable as the encoder pins
+
+          I2C Connection Guide:
+          Raspberry Pi | Arduino
+          GPIO2 (SDA) -> A4
+          GPIO3 (SCL) -> A5
+          GND         -> GND
+ test
+ RUNNING:  Both libraries below must be installed before running this program.
+ RESOURCE: https://github.com/pololu/dual-mc33926-motor-shield
+ PURPOSE:  This provides the library "DualMC33926MotorShield.h" which simplifies motor control considerably.
+ RESOURCE: https://www.pjrc.com/teensy/td_libs_Encoder.html
+ PURPOSE:  This is the "Encoder.h" library used to read the encoders on the motor to determine position.*/
 //////////////////////////////////////////////////////////////////////
 #include <Arduino.h>
 #include <DualMC33926MotorShield.h>
@@ -52,8 +52,8 @@
   _M2FB = A1;
 }*/
 
-// Instead of having a lot of duplicate lines, I decided to store left and right variables together.
-// Arduino doesn't have std::pair, so I made my own that works with any type T.
+/* Instead of having a lot of duplicate lines, I decided to store left and right variables together.
+ Arduino doesn't have std::pair, so I made my own that works with any type T.*/
 template<typename T>
 struct Pair {
 	T L; T R;
@@ -75,9 +75,9 @@ const float CPR = 3200;	//!< Total encoder counts per revolution (CPR) of motor 
 #define ENC_L_WHITE 3			//!< Left motor encoder output B (white wire)
 #define ENC_L_YELLOW 6			//!< Left motor encoder output A (yellow wire)
 
-// From mini project, pin1 on the Encoder object needs to connect to the white wire on the motor encoder
-// for CCW to be positive (facing the wheel)
-// 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
+/* From mini project, pin1 on the Encoder object needs to connect to the white wire on the motor encoder
+ for CCW to be positive (facing the wheel)
+ 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)*/
 Encoder motorEncR(ENC_R_WHITE, ENC_R_YELLOW); //!< Right motor encoder
 Encoder motorEncL(ENC_L_WHITE, ENC_L_YELLOW); //!< Left motor encoder
 
@@ -162,13 +162,14 @@ void loop() {
 		// read encoders
 		newPos = {motorEncL.read(), -motorEncR.read()};
 	}
+
 	// Experiment 1
 	if(run1) {
 		// At 1 second, set the motor to target speed
 		if(millis() - start >= 1000 && !motorsSet) {
 			setMotorValues(0, 1);
-			// The right motor needs to rotate in the opposite direction compared to the left motor.
-			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
+			/* The right motor needs to rotate in the opposite direction compared to the left motor.
+			 instead of inverting the power supply on the right motor, we just need to negate the value we set.*/
 			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 			motorsSet = true;
 		}
@@ -179,36 +180,38 @@ void loop() {
 			// Adjust elapsed time
 			now += SAMPLE_RATE;
 
-			// Read new encoder counts from both motors
-			// One needs to be negative! CCW looking into the wheel is positive
-			// Left wheel spinning CCW and right wheel spinning CW = forward
-			// Right encoder counts need to have the opposite sign
-//			timeOfSample = micros();
-//			newPos = {motorEncL.read(), -motorEncR.read()};
+			/* Read new encoder counts from both motors
+			 One needs to be negative! CCW looking into the wheel is positive
+			 Left wheel spinning CCW and right wheel spinning CW = forward
+			 Right encoder counts need to have the opposite sign*/
+			//timeOfSample = micros();
+			//newPos = {motorEncL.read(), -motorEncR.read()};
 
 			// Convert encoder counts to radians
 			//newAngPos = Pair<float>({float(newPos.L), float(newPos.R)}) * float((2.0 * PI) / CPR);
 
+			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
+			//angVel = (newAngPos - angPos)  / float(timeOfSample-timeOfLastSample);
+
 			// How does this work?
-			if(abs(newPos.R) > CPR){
+			/*if(abs(newPos.R) > CPR){
 				nRight = 1+int(floorf(abs(newPos.R) / (CPR)));
 			}else if(abs(newPos.L) > CPR){
 				nLeft = 1+int(floorf(abs(newPos.L) / (CPR)));
 			}
-			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
-			//angVel = (newAngPos - angPos)  / float(timeOfSample-timeOfLastSample);
+			distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
+			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);*/
 
 			// I did a bunch of math, and it turns out we can simplify it a lot.
 			//rho_dot = WHEEL_RADIUS*(angVel.L + angVel.R)*float(0.5); // TODO units of rho_dot?
 			rho_dot = CONVERSION*(float(newPos.R - pos.R + newPos.L - pos.L))/float(2.0*float(Ts));
 			//phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
 			phi_dot = CONVERSION*(float(newPos.L - pos.L - newPos.R + pos.R))/float(WHEELBASE*float(Ts));
-			//distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
-			//distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
+
 
 			// If elapsed time is between 1s and 2s
 			if(millis() - start >= 1000 && millis() - start <= 2000) {
-				// Print elapsed time, target speed, and angular velocity for each motor
+				// Print elapsed time, forward velocity, and rotational velocity for each motor
 				Serial.print(millis() - start); // elapsed time in ms
 				Serial.print("\t");
 				Serial.print(rho_dot); // forward velocity
@@ -239,31 +242,31 @@ void loop() {
 			motorsSet = true;
 		}
 
-		// Read new encoder counts from both motors
-		// One needs to be negative! CCW looking into the wheel is positive
-		// Left wheel spinning CCW and right wheel spinning CW = forward
-		// Right encoder counts need to have the opposite sign
+		/* Read new encoder counts from both motors
+		 One needs to be negative! CCW looking into the wheel is positive
+		 Left wheel spinning CCW and right wheel spinning CW = forward
+		 Right encoder counts need to have the opposite sign*/
 		//currentTime = millis();
 		//newPos = {motorEncL.read(), -motorEncR.read()};
 
 		// Convert encoder counts to radians
 		//newAngPos = Pair<float>({float(newPos.L), float(newPos.R)}) * float((2.0 * PI) / CPR);
-//		if(abs(newPos.R) > CPR){
-//			nRight = 1+int(floorf(abs(newPos.R) / (CPR)));
-//		}else if(abs(newPos.L) > CPR){
-//			nLeft = 1+int(floorf(abs(newPos.L) / (CPR)));
-//		}
+		/*if(abs(newPos.R) > CPR){
+			nRight = 1+int(floorf(abs(newPos.R) / (CPR)));
+		}else if(abs(newPos.L) > CPR){
+			nLeft = 1+int(floorf(abs(newPos.L) / (CPR)));
+		}
+		distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
+		distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);*/
 
 		// Find current angular velocities in rad/s: (x2 - x1) / ∆t
 		//angVel = ((newAngPos - angPos) * float(1000)* float(1000) ) / float(micros()-oldTime);
+
 		//rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2;
 		//phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
 
 		rho_dot = CONVERSION*(float(newPos.R - pos.R + newPos.L - pos.L))/float(2.0*float(Ts));
 		phi_dot = CONVERSION*(float(newPos.L - pos.L - newPos.R + pos.R))/float(WHEELBASE*float(Ts));
-
-		//distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
-		//distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
 
 		// Print new data every sample time
 		if (currentTime -start2 >= now + SAMPLE_RATE) {
@@ -271,7 +274,7 @@ void loop() {
 			now += SAMPLE_RATE;
 			// If elapsed time is between 1s and 2s
 			if(currentTime-start2 >= 1000 && currentTime-start2 <= 2000) {
-				// Print elapsed time, target speed, and angular velocity for each motor
+				// Print elapsed time, forward velocity, and rotational velocity for each motor
 				Serial.print(millis()-start2); // elapsed time in ms
 				Serial.print("\t");
 				Serial.print(rho_dot, 5); // forward velocity
@@ -301,7 +304,6 @@ void loop() {
 void setMotorValues(float commandDifference, float commandSum) {
 	Pair<float> target = {0,0}; //!< Motor PWM outputs
 
-	// TODO do the math on the handout to get Va,1 and Va,2 from the sum and difference
 	// commandSum: A decimal value between -1 and 1 describing the proportional voltage sum applied to left and right motors
 	// (Voltage of left motor + voltage of right motor = commandSum. sum = -1 = full reverse, sum = 1 = full forward)
 	// commandDifference: A decimal value between -1 and 1 describing the proportional difference in voltages applied to left nd right motors (controls rotation, higher value =
@@ -314,8 +316,6 @@ void setMotorValues(float commandDifference, float commandSum) {
 
 	// Set the global targetSpeed variable with the
 	targetSpeed = {int(target.L),int(target.R)};
-	//targetSpeed = {int(400),int(400)};
-	// targetSpeed = {,targetR};
 }
 
 //!< Reads data sent over serial from Matlab
