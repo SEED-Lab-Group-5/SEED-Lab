@@ -4,6 +4,11 @@
 #include <Wire.h>
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
+// TARGETS
+float rho_dot = 0, rho = 0, targetRho = 48; // target distance in inches
+float phi_dot = 0, phi = 0, targetPhi = PI/2.0; // target angle in radians
+
+
 template<typename T>
 struct Pair {
 	T L; T R;
@@ -17,9 +22,18 @@ struct Pair {
 	Pair operator/(const T & a) const {			return Pair<T>( {T(L)/a, T(R)/a} ); };
 	Pair operator/(const Pair<T> & a) const {	return Pair<T>( {T(L)/a.L, T(R)/a.R} );	};
 };
-
-const float KP_RHO = 88.1417, KI_RHO = 4.8396, KD_RHO = 0;          // Calculated in Matlab (ArduinoFindTf.mlx)
-const float KP_PHI = 88.1417, KI_PHI = 4.8396, KD_PHI = 0;          // Calculated in Matlab (ArduinoFindTf.mlx)
+// With rhodot and phidot divided by 800, the values just got wayy to big.
+//const float KP_RHO = 63.939045, KI_RHO = 3.795643, KD_RHO = 4.845007;          // Calculated in Matlab (ArduinoFindTf.mlx)
+//const float KP_RHO = 34.216994, KI_RHO = 1.093487, KD_RHO = 2.496114;
+const float KP_RHO = 17.108497, KI_RHO = 0.546743, KD_RHO = 1.248057;
+//const float KP_PHI = 427.167887, KI_PHI = 24.544081, KD_PHI = 26.739142;          // Calculated in Matlab (ArduinoFindTf.mlx)
+//const float KP_PHI = 213.583944, KI_PHI = 12.272041, KD_PHI = 13.369571;
+//const float KP_PHI = 1232.854805, KI_PHI = 199.132425, KD_PHI = 91.461473;
+//const float KP_PHI = 735.404277, KI_PHI = 51.895973, KD_PHI = 0.000000;
+//const float KP_PHI = 286.817493, KI_PHI = 51.895973, KD_PHI = 0.000000;
+//const float KP_PHI = 285.727771, KI_PHI = 0.000000, KD_PHI = 11.507431;
+//const float KP_PHI = 567.842595, KI_PHI = 120.272041, KD_PHI = 0.000000;
+const float KP_PHI = 1000, KI_PHI = 200, KD_PHI = 0.000000;
 
 /**
  * Sets motorSum based on error
@@ -70,10 +84,9 @@ const long SAMPLE_RATE = 10;     //!< Period to wait before measuring and sendin
 Pair<long> newPosition;     	//!< CURRENT wheel encoder readings (counts)
 //Pair<float> angVel;				//!< Wheel angular velocities (rad/s)
 
-float rho_dot = 0, rho = 0, targetRho = 24; // target distance in inches
-float phi_dot = 0, phi = 0, targetPhi = PI/2.0; // target angle in radians
+
 const float WHEEL_RADIUS = 2.95;              //Radius of wheel in inches
-const float WHEELBASE = 13.974;                  //Wheelbase measurement in inches
+const float WHEELBASE = 14.5;//13.974;                  //Wheelbase measurement in inches
 
 float motorDif, motorSum; 		//!< Parameters for steering. motorDif must be [0,800] and motorSum must be [-800, 800]
 Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
@@ -103,15 +116,9 @@ void loop() {
 	// Update encoder counts
 	newPosition = {motorEncL.read(), -motorEncR.read()};
 
-	// Convert encoder counts to radians
-	// newAngPos = Pair<float>({float(newPosition.L),float(newPosition.R)}) * RAD_CONVERSION;
-	//angVel = ((newAngPos - angPos) * float(1000) ) / float(millis()-oldTime);
-
-	//rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/float(2.0);
-	//phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
-
 	// Find current robot position
-	rho = WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L + newPosition.R)*float(0.5);
+	// RAD_CONVERSION = float(2.0*PI)/CPR
+	rho = WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L + newPosition.R); // Circumference = 2*PI*r
 	phi = (WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L - newPosition.R))/WHEELBASE;
 
 	// Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
@@ -120,8 +127,10 @@ void loop() {
 		// Adjust elapsed time
 		currentTime += CONTROL_SAMPLE_RATE;
 
-		motorSum = controlRho(rho,targetRho,KP_RHO,KI_RHO,KD_RHO);
+
 		motorDif = controlPhi(phi,targetPhi,KP_PHI,KI_PHI,KD_PHI);
+		// only start moving forward when done turning
+		if(abs(motorDif)<10) motorSum = controlRho(rho,targetRho,KP_RHO,KI_RHO,KD_RHO);
 	}
 
 	// Determine target motor speeds based on motorDif and motorSum using setMotorValues()
@@ -129,6 +138,7 @@ void loop() {
 
 	// Set the motors to the new speeds
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
+	//motors.setSpeeds(400,-400);
 }
 
 // Need two controllers. One to use rho to set commandSum and one to use phi to set commandDifference
@@ -154,21 +164,23 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	} else D = 0;
 
 	// Calculate controller output
-	output = P + I_rho + D;
+	output = P + I_rho;
 
 	// Make sure the output is within [-800, 800]
 	if(output > 800) output = 800;
 	if(output < -800) output = -800;
 
 
-	// Print current values for testing
-	Serial.print("\nCurrent: "); Serial.print(current);
-	Serial.print("\tDesired: "); Serial.print(desired);
-	Serial.print("\terror: "); Serial.print(error);
-	Serial.print("\tP: "); Serial.print(P);
-	Serial.print("\tI: "); Serial.print(I_rho);
-	Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tnewSum: "); Serial.println(output);
+	if(millis() < 20000) {
+		// Print current values for testing
+		Serial.print("\nCurrentRho: "); Serial.print(current);
+		Serial.print("\tDesired: "); Serial.print(desired);
+		Serial.print("\terror: "); Serial.print(error);
+		Serial.print("\tP: "); Serial.print(P);
+		Serial.print("\tI: "); Serial.print(I_rho);
+		Serial.print("\tD: "); Serial.print(D);
+		Serial.print("\tnewSum: "); Serial.println(output);
+	}
 
 	return output;
 }
@@ -199,17 +211,20 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 
 	// Make sure the output is within [0, 800]
 	if(output > 800) output = 800;
-	if(output < 0) output = 0;
+	if(output < -800) output = -800;
 
 
-	// Print current values for testing
-	Serial.print("\nCurrentPhi: "); Serial.print(current);
-	Serial.print("\tDesiredPhi: "); Serial.print(desired);
-	Serial.print("\terror: "); Serial.print(error);
-	Serial.print("\tP: "); Serial.print(P);
-	Serial.print("\tI: "); Serial.print(I_phi);
-	Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tnewDif: "); Serial.println(output);
+	if(millis() < 20000) {
+		// Print current values for testing
+		Serial.print("\nCurrentPhi: "); Serial.print(current);
+		Serial.print("\tDesiredPhi: "); Serial.print(desired);
+		Serial.print("\terror: "); Serial.print(error);
+		Serial.print("\tP: "); Serial.print(P);
+		Serial.print("\tI: "); Serial.print(I_phi);
+		Serial.print("\tD: "); Serial.print(D);
+		Serial.print("\tnewDif: "); Serial.println(output);
+	}
+
 
 	return output;
 }
@@ -224,6 +239,8 @@ void setMotorValues(float commandDifference, float commandSum) {
 	target.R = (commandSum-commandDifference)/float(2.0);
 	target.L = (commandSum+commandDifference)/float(2.0);
 
+	// TODO remove this. Wheels are slipping so reducing the max speed should help
+	//target = target * 0.5;
 
 	// Make sure the speeds are within [-400, 400]
 	if(target.R > MAX_SPEED) target.R = MAX_SPEED;
