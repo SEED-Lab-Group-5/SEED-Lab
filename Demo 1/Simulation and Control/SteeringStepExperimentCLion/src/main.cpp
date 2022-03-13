@@ -98,8 +98,8 @@ float rho_dot = 0;
 float phi_dot = 0;
 volatile float distanceLeft = 0;
 volatile float distanceRight = 0;
-const float WHEEL_RADIUS = 2.95;              //Radius of wheel in inches
-const float WHEELBASE = 13.974;                  //Wheelbase measurement in inches
+const float WHEEL_RADIUS = 2.875;              //Radius of wheel in inches
+const float WHEELBASE = 13.75;                  //Wheelbase measurement in inches
 int nLeft = 1;
 int nRight = 1;
 
@@ -154,7 +154,7 @@ void loop() {
 	if(run1) {
 		// At 1 second, set the motor to target speed
 		if(millis() - start >= 1000 && !motorsSet) {
-			setMotorValues(0, 800);
+			setMotorValues(0, 400);
 			// The right motor needs to rotate in the opposite direction compared to the left motor.
 			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
 			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
@@ -230,7 +230,7 @@ void loop() {
 
 		// At 1 second, set the motor to target speed
 		if(millis()-start2 >= 1000 && !motorsSet) {
-			setMotorValues(800, 0);
+			setMotorValues(400, 0);
 			// The right motor needs to rotate in the opposite direction compared to the left motor.
 			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
 			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);

@@ -5,11 +5,12 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
 // TARGETS
-float rho_dot = 0, rho = 0, targetRho = 48; // target distance in inches
-float phi_dot = 0, phi = 0, targetPhi = PI/2.0; // target angle in radians
+float rho_dot = 0, rho = 0, targetRho = 60; // target distance in inches
+float phi_dot = 0, phi = 0, targetPhi = 0; // target angle in radians
 
 
 template<typename T>
+
 struct Pair {
 	T L; T R;
 	// I did some serious operator overloading to do math on both elements at once.
@@ -25,7 +26,10 @@ struct Pair {
 // With rhodot and phidot divided by 800, the values just got wayy to big.
 //const float KP_RHO = 63.939045, KI_RHO = 3.795643, KD_RHO = 4.845007;          // Calculated in Matlab (ArduinoFindTf.mlx)
 //const float KP_RHO = 34.216994, KI_RHO = 1.093487, KD_RHO = 2.496114;
-const float KP_RHO = 17.108497, KI_RHO = 0.546743, KD_RHO = 1.248057;
+//const float KP_RHO = 17.108497, KI_RHO = 0.546743, KD_RHO = 1.248057;
+//const float KP_RHO = 37.654344, KI_RHO = 1.203335, KD_RHO = 2.746867;
+// const float KP_RHO = 20.532959, KI_RHO = 0.358939, KD_RHO = 1.386060;
+const float KP_RHO = 41.507628, KI_RHO = 0.000000, KD_RHO = 0.000000;
 //const float KP_PHI = 427.167887, KI_PHI = 24.544081, KD_PHI = 26.739142;          // Calculated in Matlab (ArduinoFindTf.mlx)
 //const float KP_PHI = 213.583944, KI_PHI = 12.272041, KD_PHI = 13.369571;
 //const float KP_PHI = 1232.854805, KI_PHI = 199.132425, KD_PHI = 91.461473;
@@ -33,8 +37,8 @@ const float KP_RHO = 17.108497, KI_RHO = 0.546743, KD_RHO = 1.248057;
 //const float KP_PHI = 286.817493, KI_PHI = 51.895973, KD_PHI = 0.000000;
 //const float KP_PHI = 285.727771, KI_PHI = 0.000000, KD_PHI = 11.507431;
 //const float KP_PHI = 567.842595, KI_PHI = 120.272041, KD_PHI = 0.000000;
-const float KP_PHI = 1000, KI_PHI = 200, KD_PHI = 0.000000;
-
+//const float KP_PHI = 1000, KI_PHI = 200, KD_PHI = 0.000000;
+const float KP_PHI = 260.542014, KI_PHI = 0.000000, KD_PHI = 0.000000;
 /**
  * Sets motorSum based on error
  * @param current current position
@@ -61,6 +65,7 @@ float I_rho = 0, I_phi = 0;
 unsigned long currentTime = 0, startTime = 0;           //!< For creating a discrete time controller
 const int MAX_SPEED = 400;   							//!< Maximum scaled PWM (if using DualMC33926MotorShield.h, max = 400)
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
+const long TURN_WAIT = 1000;
 volatile float currentAngle = 0, desiredAngle = 0;      //!< position relative to initial position (radians)
 
 const float CPR = 50.0*64.0;	//!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
@@ -83,10 +88,13 @@ const long SAMPLE_RATE = 10;     //!< Period to wait before measuring and sendin
 //Pair<float> newAngPos;			//!< CURRENT wheel positions (radians)
 Pair<long> newPosition;     	//!< CURRENT wheel encoder readings (counts)
 //Pair<float> angVel;				//!< Wheel angular velocities (rad/s)
+Pair<long> startRead = {0,0};
+bool firstRho = true;
+float rhoOffset = 0;
 
 
-const float WHEEL_RADIUS = 2.95;              //Radius of wheel in inches
-const float WHEELBASE = 14.5;//13.974;                  //Wheelbase measurement in inches
+const float WHEEL_RADIUS = 2.9375;              //Radius of wheel in inches
+const float WHEELBASE = 13.65;                 //Wheelbase measurement in inches
 
 float motorDif, motorSum; 		//!< Parameters for steering. motorDif must be [0,800] and motorSum must be [-800, 800]
 Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
@@ -109,6 +117,7 @@ void setup() {
 	// Initialize the motor
 	motors.init();
 	motors.setSpeeds(0, 0);         // Set motor A and B speeds to 0
+
 }
 
 void loop() {
@@ -118,19 +127,26 @@ void loop() {
 
 	// Find current robot position
 	// RAD_CONVERSION = float(2.0*PI)/CPR
-	rho = WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L + newPosition.R); // Circumference = 2*PI*r
-	phi = (WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L - newPosition.R))/WHEELBASE;
 
+	phi = (WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L - newPosition.R))/WHEELBASE;
+	rho = WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L + newPosition.R)*float(0.5); // Circumference = 2*PI*r
 	// Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
 	if (millis()-startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 
 		// Adjust elapsed time
 		currentTime += CONTROL_SAMPLE_RATE;
 
-
-		motorDif = controlPhi(phi,targetPhi,KP_PHI,KI_PHI,KD_PHI);
+		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180),KP_PHI,KI_PHI,KD_PHI);
 		// only start moving forward when done turning
-		if(abs(motorDif)<10) motorSum = controlRho(rho,targetRho,KP_RHO,KI_RHO,KD_RHO);
+		// millis() - startTime >= TURN_WAIT &&
+		if(abs(motorDif) < 20) {
+			if(firstRho) { // to mitigate the initial encoder readings from turning
+				rhoOffset = WHEEL_RADIUS*RAD_CONVERSION*float(newPosition.L + newPosition.R)*float(0.5);
+				firstRho = false;
+			}
+			motorSum = controlRho(rho-rhoOffset,targetRho,KP_RHO,KI_RHO,KD_RHO);
+		}
+
 	}
 
 	// Determine target motor speeds based on motorDif and motorSum using setMotorValues()
@@ -164,11 +180,15 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	} else D = 0;
 
 	// Calculate controller output
-	output = P + I_rho;
+	output = P + I_rho + D;
 
 	// Make sure the output is within [-800, 800]
-	if(output > 800) output = 800;
-	if(output < -800) output = -800;
+	if(output > 400) output = 400;
+	if(output < -400) output = -400;
+
+	if(error > 1 && output < 80) output = 80;
+	if(error < -1 && output > -80) output = -80;
+
 
 
 	if(millis() < 20000) {
@@ -210,8 +230,11 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	output = P + I_phi + D;
 
 	// Make sure the output is within [0, 800]
-	if(output > 800) output = 800;
-	if(output < -800) output = -800;
+	if(output > 400) output = 400;
+	if(output < -400) output = -400;
+
+	if(error > 0.1 && output < 80) output = 80;
+	if(error < -0.1 && output > -80) output = -80;
 
 
 	if(millis() < 20000) {
