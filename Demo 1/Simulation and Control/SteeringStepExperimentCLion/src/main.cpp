@@ -318,7 +318,7 @@ void setMotorValues(float commandDifference, float commandSum) {
 	target.L = (commandSum+commandDifference)/float(2.0);
 
 	// Scale the ratios to map a max of 1 to a max of 400
-	target = target * float(400);
+	target = target * float(800);
 
 	// Set the global targetSpeed variable with the
 	targetSpeed = {int(target.L),int(target.R)};
