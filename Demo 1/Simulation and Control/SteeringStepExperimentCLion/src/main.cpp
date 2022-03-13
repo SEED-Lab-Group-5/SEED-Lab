@@ -154,7 +154,7 @@ void loop() {
 	if(run1) {
 		// At 1 second, set the motor to target speed
 		if(millis() - start >= 1000 && !motorsSet) {
-			setMotorValues(0, 1);
+			setMotorValues(0, 800);
 			// The right motor needs to rotate in the opposite direction compared to the left motor.
 			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
 			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
@@ -187,7 +187,7 @@ void loop() {
 			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
 			angVel = ((newAngPos - angPos) * float(1000) ) / float(millis()-oldTime);
 
-			rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2.0;
+			rho_dot = WHEEL_RADIUS*(angVel.L + angVel.R)*float(0.5);
 			phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
 
 			/*distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
@@ -230,7 +230,7 @@ void loop() {
 
 		// At 1 second, set the motor to target speed
 		if(millis()-start2 >= 1000 && !motorsSet) {
-			setMotorValues(1, 0);
+			setMotorValues(800, 0);
 			// The right motor needs to rotate in the opposite direction compared to the left motor.
 			// instead of inverting the power supply on the right motor, we just need to negate the value we set.
 			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
@@ -263,7 +263,7 @@ void loop() {
 			// Find current angular velocities in rad/s: (x2 - x1) / ∆t
 			angVel = ((newAngPos - angPos) * float(1000) ) / float(millis()-oldTime);
 
-			rho_dot = (WHEEL_RADIUS*(angVel.L + angVel.R))/2.0;
+			rho_dot = WHEEL_RADIUS*(angVel.L + angVel.R)*float(0.5);
 			phi_dot = (WHEEL_RADIUS*(angVel.L - angVel.R))/WHEELBASE;
 
 //			distanceRight = nRight*2*PI*pow(WHEEL_RADIUS,2);
@@ -317,10 +317,12 @@ void setMotorValues(float commandDifference, float commandSum) {
 	target.R = (commandSum-commandDifference)/float(2.0);
 	target.L = (commandSum+commandDifference)/float(2.0);
 
-	// Scale the ratios to map a max of 1 to a max of 400
-	target = target * float(800);
+	// Make sure the speeds are within [-400, 400]
+	if(target.R > MAX_SPEED) target.R = MAX_SPEED;
+	if(target.L > MAX_SPEED) target.L = MAX_SPEED;
+	if(target.R < -MAX_SPEED) target.R = -MAX_SPEED;
+	if(target.L < -MAX_SPEED) target.L = -MAX_SPEED;
 
-	// Set the global targetSpeed variable with the
 	targetSpeed = {int(target.L),int(target.R)};
 	//targetSpeed = {int(400),int(400)};
 	// targetSpeed = {,targetR};
