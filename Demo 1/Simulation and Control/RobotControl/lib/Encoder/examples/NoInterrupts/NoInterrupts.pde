@@ -9,7 +9,7 @@
 // useful to reduce the size of the library when you are using it
 // with pins that do not support interrupts.  Without interrupts,
 // your program must call the read() function rapidly, or risk
-// missing changes in position.
+// missing changes in counts.
 #define ENCODER_DO_NOT_USE_INTERRUPTS
 #include <Encoder.h>
 

@@ -132,16 +132,16 @@ public:
 #else
 	inline int32_t read() {
 		update(&encoder);
-		return encoder.position;
+		return encoder.counts;
 	}
 	inline int32_t readAndReset() {
 		update(&encoder);
-		int32_t ret = encoder.position;
-		encoder.position = 0;
+		int32_t ret = encoder.counts;
+		encoder.counts = 0;
 		return ret;
 	}
 	inline void write(int32_t p) {
-		encoder.position = p;
+		encoder.counts = p;
 	}
 #endif
 private:
@@ -187,13 +187,13 @@ public:
 			case 0: case 5: case 10: case 15:
 				break;
 			case 1: case 7: case 8: case 14:
-				position++; break;
+				counts++; break;
 			case 2: case 4: case 11: case 13:
-				position--; break;
+				counts--; break;
 			case 3: case 12:
-				position += 2; break;
+				counts += 2; break;
 			default:
-				position -= 2; break;
+				counts -= 2; break;
 		}
 		state = (s >> 2);
 	}
@@ -297,16 +297,16 @@ public:
 		arg->state = (state >> 2);
 		switch (state) {
 			case 1: case 7: case 8: case 14:
-				arg->position++;
+				arg->counts++;
 				return;
 			case 2: case 4: case 11: case 13:
-				arg->position--;
+				arg->counts--;
 				return;
 			case 3: case 12:
-				arg->position += 2;
+				arg->counts += 2;
 				return;
 			case 6: case 9:
-				arg->position -= 2;
+				arg->counts -= 2;
 				return;
 		}
 #endif
