@@ -1,2 +1,0 @@
-skip_boards:
-  - esp8266:esp8266:huzzah
