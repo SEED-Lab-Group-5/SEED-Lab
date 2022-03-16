@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// NAME:
-// CLASS:	 EENG-350
+// NAME:     Trevor Olsen (Primary Author)
+// CLASS:   EENG-350
 // GROUP:    5
 // TITLE:    Steering Control - Step Response Experiment
 //
@@ -33,7 +33,7 @@
 // PURPOSE:  This is the "Encoder.h" library used to read the encoders on the motor to determine position.
 //////////////////////////////////////////////////////////////////////
 #include <Arduino.h>
-#include <DualMC33926MotorShield.h>
+#include "DualMC33926MotorShield.h"
 #include <Encoder.h>
 #include <math.h>
 
@@ -59,52 +59,52 @@ template<typename T>
 struct Pair {
     T L; T R;
     // I did some serious operator overloading to do math on both elements at once.
-    Pair operator+(const T & a) const {			return Pair<T>( {T(L)+a, T(R)+a} );	};
-    Pair operator+(const Pair<T> & a) const {	return Pair<T>( {T(L)+a.L, T(R)+a.R} ); };
-    Pair operator-(const T & a) const { 		return Pair<T>( {T(L)-a, T(R)-a} ); };
-    Pair operator-(const Pair<T> & a) const {	return Pair<T>( {T(L)-a.L, T(R)-a.R} ); };
-    Pair operator*(const T & a) const { 		return Pair<T>( {T(L)*a, T(R)*a} ); };
-    Pair operator*(const Pair<T> & a) const {	return Pair<T>( {T(L)*a.L, T(R)*a.R} ); };
-    Pair operator/(const T & a) const {			return Pair<T>( {T(L)/a, T(R)/a} ); };
-    Pair operator/(const Pair<T> & a) const {	return Pair<T>( {T(L)/a.L, T(R)/a.R} );	};
+    Pair operator+(const T & a) const {     return Pair<T>( {T(L)+a, T(R)+a} ); };
+    Pair operator+(const Pair<T> & a) const { return Pair<T>( {T(L)+a.L, T(R)+a.R} ); };
+    Pair operator-(const T & a) const {     return Pair<T>( {T(L)-a, T(R)-a} ); };
+    Pair operator-(const Pair<T> & a) const { return Pair<T>( {T(L)-a.L, T(R)-a.R} ); };
+    Pair operator*(const T & a) const {     return Pair<T>( {T(L)*a, T(R)*a} ); };
+    Pair operator*(const Pair<T> & a) const { return Pair<T>( {T(L)*a.L, T(R)*a.R} ); };
+    Pair operator/(const T & a) const {     return Pair<T>( {T(L)/a, T(R)/a} ); };
+    Pair operator/(const Pair<T> & a) const { return Pair<T>( {T(L)/a.L, T(R)/a.R} ); };
 };
 
 // Encoder parameters
-const int CPR = 3200;	// Total encoder counts per revolution (CPR) of motor shaft: 3200counts/rotation
+const int CPR = 3200; // Total encoder counts per revolution (CPR) of motor shaft: 3200counts/rotation
 // Castor wheel is the back of the robot
-#define ENC_R_WHITE 2 			// Right motor encoder output B (white wire)
-#define ENC_R_YELLOW 5  		// Right motor encoder output A (yellow wire)
-#define ENC_L_WHITE 3			// Left motor encoder output B (white wire)
-#define ENC_L_YELLOW 6			// Left motor encoder output A (yellow wire)
+#define ENC_R_WHITE 2       // Right motor encoder output B (white wire)
+#define ENC_R_YELLOW 5      // Right motor encoder output A (yellow wire)
+#define ENC_L_WHITE 3     // Left motor encoder output B (white wire)
+#define ENC_L_YELLOW 6      // Left motor encoder output A (yellow wire)
 
 // From mini project, pin1 on the Encoder object needs to connect to the white wire on the motor encoder
 // for CCW to be positive (facing the wheel)
 
 Encoder motorEncR(ENC_R_WHITE, ENC_R_YELLOW); // 1st pin needs to be capable of interrupts (UNO: pin 2 or 3)
 Encoder motorEncL(ENC_L_WHITE, ENC_L_YELLOW);
-Pair<long> newPosition;     	// Current position reading (counts)
+Pair<long> newPosition;       // Current position reading (counts)
 
 
 // Parameters
 DualMC33926MotorShield motors;                  // Motor 2 is the right wheel
 
-const float WHEEL_RADIUS = 2.9375;              //Radius of wheel in inches
-const float WHEELBASE = 13.25;                  //Wheelbase measurement in inches
-const long SAMPLE_RATE = 5;     	            // Sample rate in ms
-const int MAX_SPEED = 400;   	                // Desired speed. If using DualMC33926MotorShield.h: max speed = 400
-const int MIN_SPEED = -400;                     // Desired speed. If using DualMC33926MotorShield.h: min speed = -400
+const float WHEEL_RADIUS = 2.95;              //Radius of wheel in inches
+const float WHEELBASE = 13.974;                  //Wheelbase measurement in inches
+const long SAMPLE_RATE = 5;                   // Sample rate in ms
+const int MAX_SPEED = 200;                    // Desired speed. If using DualMC33926MotorShield.h: max speed = 400
+const int MIN_SPEED = -200;                     // Desired speed. If using DualMC33926MotorShield.h: min speed = -400
 bool motorsSet = false;
 
-unsigned long now = 0;    			                // Elapsed time in ms
-unsigned long start = 0;  			                // Experiment start time
+unsigned long now = 0;                          // Elapsed time in ms
+unsigned long start = 0;                        // Experiment start time
 
 
 /*
 
 Pair<float> oldAngPos, newAngPos, angVel;
-volatile float oldAngPos.R = 0, angPos.L = 0;     		    // position relative to initial position (radians)
+volatile float oldAngPos.R = 0, angPos.L = 0;             // position relative to initial position (radians)
 volatile float newAngPos.R = 0, newAngPos.L = 0;            // current position relative to initial position (radians)
-volatile float angVel.R = 0, angVel.L = 0;     		        // Current angular velocity (rad/s)
+volatile float angVel.R = 0, angVel.L = 0;                // Current angular velocity (rad/s)
 */
 
 
@@ -119,9 +119,9 @@ void setMotorValues(float commandDifference, float commandSum);
 
 
 /*
-bool commandReceived = false; 	                // flag for new serial input
-bool run1, run2;				                // flags to indicate which experiment to run
-String InputString = ""; 		                // a string to hold incoming data
+bool commandReceived = false;                   // flag for new serial input
+bool run1, run2;                        // flags to indicate which experiment to run
+String InputString = "";                    // a string to hold incoming data
 */
 
 float currentPhi = 0;
@@ -130,40 +130,55 @@ volatile float distanceLeft = 0;
 volatile float distanceRight = 0;
 int nLeft = 0;
 int nRight = 0;
-long currentEncR = 1;
-long currentEncL = 1;
+long currentEncR = 0;
+long currentEncL = 0;
 unsigned long oldTime=0;
 float rho_dot = 0;
 float phi_dot = 0;
 
-///I couldnt get the pair to work (it was red)
-float oldAngPosR=0, newAngPosR=0, angVelR=0;
-float oldAngPosL=0, newAngPosL=0, angVelL=0;
 
-////Trevors attempt at a PD implementation
+volatile float oldAngPosR=0, newAngPosR=0, angVelR=0;
+volatile float oldAngPosL=0, newAngPosL=0, angVelL=0;
+
+
+
+
+float desiredAngle = 45;         ///insert Desired Angle
+int desiredForwardMotion = 0;            //units should be in inches
+
+
+
+
+
+////PD variables for Phi
 float angleNewError = 0;
 float angleOldError = 0;
-float desiredAngle = 0;
-float phi_Kd = 30;      //starting untuned at 30
-float phi_Kp = 50;      //starting untuned at 50
+
+float distanceRref = 0;
+float distanceLref = 0;
+float phi_Kd = 14.96;
+float phi_Kp = 153.6;
 float phi_PD = 0;
 float phi_D = 0;
 int motorSpeed;
 int phiMotorChange = 0;
+volatile float desiredAngleRad = 0;
+int currentPhiDeg;
 ///control variable = speed passed to motor control function??
 
+
 ///Variables for PD for distance forward
-float desiredForwardMotion = 0;            //units should be in inches
-float currentForwardMotion = 0;
+
+int currentForwardMotion = 0;
 float rhoNewError = 0;
 float rhoOldError = 0;
 float rhoAngle = 0;
-float rho_Kd = 30;      //starting untuned at 30
-float rho_Kp = 50;      //starting untuned at 50
-float rho_PD = 0;
-float rho_D = 0;
-int rhoMotorChange = 0;
-
+float rho_Kd = 0;      //starting untuned at 30
+float rho_Kp = 1;      //starting untuned at 50
+volatile float rho_PD = 0;
+volatile float rho_D = 0;
+volatile int rhoMotorChange = 0;
+float forwardRef = 0;
 
 //void readEnc();
 
@@ -198,6 +213,9 @@ void loop() {
         commandReceived = false;
     }*/
 
+
+    //desiredAngleRad = (desiredAngle*PI)/180;
+
     currentEncR = motorEncR.read();
     currentEncL = motorEncL.read();
     if (abs(currentEncR) > CPR) {
@@ -205,9 +223,11 @@ void loop() {
     } else if (abs(currentEncL) > CPR) {
         nLeft = 1 + int(floorf(abs(currentEncL) / (CPR)));
     }
-
     newAngPosR = -(2 * PI * (currentEncR) / CPR);                        ////Inversion occurs Here with negative sign
     newAngPosL = (2 * PI * (currentEncL) / CPR);
+
+    distanceRight =  WHEEL_RADIUS*newAngPosR;
+    distanceLeft =  WHEEL_RADIUS*newAngPosL;
 
     angVelR = 1000 * ((newAngPosR - oldAngPosR) / ((millis() - oldTime)));
     angVelL = 1000 * ((newAngPosL - oldAngPosL) / ((millis() - oldTime)));
@@ -215,78 +235,114 @@ void loop() {
     rho_dot = (WHEEL_RADIUS * (angVelL + angVelR)) / 2;
     phi_dot = (WHEEL_RADIUS * (angVelL - angVelR)) / WHEELBASE;
 
-    distanceRight = nRight * 2 * PI * pow(WHEEL_RADIUS, 2);
-    distanceLeft = nLeft * 2 * PI * pow(WHEEL_RADIUS, 2);
-
 
     //keep track of current angle
-    currentPhi = oldPhi + ((WHEEL_RADIUS / WHEELBASE) * (distanceLeft - distanceRight));    //eq from Assignment 2: Localization
-    oldPhi = currentPhi;
+    //currentPhi = oldPhi + ((WHEEL_RADIUS / WHEELBASE) * (distanceLeft - distanceRight));    //eq from Assignment 2: Localization
+    //currentPhi = 2*(WHEEL_RADIUS/WHEELBASE)*newAngPosR;
+    //currentPhiDeg = int((currentPhi*180)/PI);
+    //oldPhi = currentPhi;
 
-    //TODO have turn and distance control variables add or subtract to the motorSpeed
 
+    //For the demos after and final, we need to not have the controls within while loops I think
     ////Trevors attempt at a PD implementation - this method may only be good for Demo1
 
-    while (desiredAngle != currentPhi) {
-        if (desiredAngle > currentPhi) {
-
-            angleNewError = desiredAngle - currentPhi;
-            phi_D = angleNewError - angleOldError;
-            phi_PD = (phi_Kp * angleNewError) + (phi_Kd * phi_D);
+    distanceRref = distanceRight;
+    distanceLref = distanceLeft;
+    while (currentPhi != desiredAngle) {
 
 
-            phiMotorChange = int(400 * phi_PD);
-            if (phiMotorChange > 400) {
-                phiMotorChange = 400;
-            } else if (phiMotorChange < -400) {
-                phiMotorChange = -400;
-            }
-            motors.setM1Speed(motorSpeed + phiMotorChange);
-            motors.setM2Speed(motorSpeed - phiMotorChange);
-            angleOldError = angleNewError;
+        ////Copy from above to calculate the specs
+        currentEncR = motorEncR.read();
+        currentEncL = motorEncL.read();
+
+        newAngPosR = -(2 * PI * (currentEncR) / CPR);                        ////Inversion occurs Here with negative sign
+        newAngPosL = (2 * PI * (currentEncL) / CPR);
+
+        distanceRight =  WHEEL_RADIUS*newAngPosR;
+        distanceLeft =  WHEEL_RADIUS*newAngPosL;
+
+
+        ///These did not work but i dont want to delete them yet
+        //currentPhi = oldPhi + ((WHEEL_RADIUS / WHEELBASE) * ((distanceLref - distanceLeft) -(distanceLref-distanceRight)));    //eq from Assignment 2: Localization
+        //currentPhi = oldPhi + 2*(WHEEL_RADIUS/WHEELBASE)*(distanceLeft-distanceRight);
+
+        if(oldAngPosR!=newAngPosR){
+            currentPhi = ((180/PI)*(WHEEL_RADIUS/WHEELBASE)*(distanceLeft-distanceRight))/3;
+            //currentPhi = int(oldPhi + ((WHEEL_RADIUS / WHEELBASE) * ((distanceLref - distanceLeft) -(distanceLref-distanceRight))));    //eq from Assignment 2: Localization
+            //currentPhi = oldPhi + 2*(WHEEL_RADIUS/WHEELBASE)*(distanceLeft-distanceRight);
+            //currentPhi = 2*(WHEEL_RADIUS/WHEELBASE)*newAngPosR;
         }
-        if (desiredAngle < currentPhi) {
+        oldPhi = currentPhi;
+        Serial.println(currentPhi);
 
-            angleNewError = desiredAngle - currentPhi;
-            phi_D = angleNewError - angleOldError;
-            phi_PD = (phi_Kp * angleNewError) + (phi_Kd * phi_D);
-
-
-            phiMotorChange = int(400 * phi_PD);
-            if (phiMotorChange > 400) {
-                phiMotorChange = 400;
-            } else if (phiMotorChange < -400) {
-                phiMotorChange = -400;
-            }
-            motors.setM1Speed(motorSpeed - phiMotorChange);
-            motors.setM2Speed(motorSpeed + phiMotorChange);
-            angleOldError = angleNewError;
-        }
-
-        ///ends here
         oldAngPosR = newAngPosR;
         oldAngPosL = newAngPosL;
         oldTime = millis();
+        distanceRref = distanceRight;
+        distanceLref = distanceLeft;
+        ////////end of copy from above
+
+        //Serial.println(currentPhiDeg);
+
+        angleNewError = desiredAngle - currentPhi;
+        phi_D = angleNewError - angleOldError;
+        phi_PD = (phi_Kp * angleNewError) + (phi_Kd * phi_D);
+
+
+        motorSpeed = int(MAX_SPEED * phi_PD);
+        if (motorSpeed > MAX_SPEED) {
+            motorSpeed = MAX_SPEED;
+        } else if (motorSpeed < MIN_SPEED) {
+            motorSpeed = MIN_SPEED;
+        }
+        motors.setM1Speed(motorSpeed);
+        motors.setM2Speed(motorSpeed);
+        angleOldError = angleNewError;
+
+
+
     }
+    //Serial.println("You made it out of the Turn!!!! YAY");
 
-
+    //TODO calculate currentforwardmotion below
     ////controller for movement forward - this method may only be good for Demo1
-    while(currentForwardMotion != desiredForwardMotion){
+
+    forwardRef = distanceLeft;
+    while((currentForwardMotion < desiredForwardMotion) ||(currentForwardMotion > desiredForwardMotion)){
+        Serial.println(distanceLeft);
+
+
+        currentEncR = motorEncR.read();
+        currentEncL = motorEncL.read();
+
+        newAngPosR = -(2 * PI * (currentEncR) / CPR);                        ////Inversion occurs Here with negative sign
+        newAngPosL = (2 * PI * (currentEncL) / CPR);
+
+
+        distanceRight =  WHEEL_RADIUS*newAngPosR;
+        distanceLeft =  WHEEL_RADIUS*newAngPosL;
+
+        currentForwardMotion = int(distanceLeft - forwardRef);
+
         rhoNewError = desiredForwardMotion - currentForwardMotion;
         rho_D = rhoNewError - rhoOldError;
         rho_PD = (rho_Kp * rhoNewError) + (rho_Kd * rho_D);
 
 
-        rhoMotorChange = int(400 * phi_PD);
-        if (rhoMotorChange > 400) {
-            rhoMotorChange = 400;
-        } else if (rhoMotorChange < -400) {
-            rhoMotorChange = -400;
+        rhoMotorChange = int(MAX_SPEED * rho_PD);
+        if (rhoMotorChange > MAX_SPEED) {
+            rhoMotorChange = MAX_SPEED;
+        } else if (rhoMotorChange < -MAX_SPEED) {
+            rhoMotorChange = -MAX_SPEED;
         }
-        motors.setM1Speed(motorSpeed + rhoMotorChange);
-        motors.setM2Speed(motorSpeed + rhoMotorChange);
-        angleOldError = angleNewError;
+        motors.setM1Speed(rhoMotorChange);
+        motors.setM2Speed(-rhoMotorChange);
+        rhoOldError = rhoNewError;
+
     }
+
+    motorSpeed = 0; //should be zero if not pulled into the above while loops
+    currentForwardMotion = int(distanceLeft - forwardRef);
 }
 
 ////Attempting to make encoder readings a simple function call
@@ -300,24 +356,6 @@ void loop() {
     }
 }*/
 
-/*void setMotorValues(float commandDifference, float commandSum) {
-    Pair<float> target = {0,0};
-
-    // TODO do the math on the handout to get Va,1 and Va,2 from the sum and difference
-    // commandSum: A decimal value between -1 and 1 describing the proportional voltage sum applied to left and right motors
-    // (Voltage of left motor + voltage of right motor = commandSum. sum = -1 = full reverse, sum = 1 = full forward)
-    // commandDifference: A decimal value between -1 and 1 describing the proportional difference in voltages applied to left nd right motors (controls rotation, higher value =
-
-    target.R = (-commandSum+commandDifference)/float(2.0);      //Added negative to give negative speed and allow forward motion.
-    target.L = (commandSum-commandDifference)/float(2.0);
-
-    // Scale the ratios to map a max of 1 to a max of 400
-    target = target * float(400);
-
-    // Set the global targetSpeed variable with the
-    targetSpeed = {int(target.L),int(target.R)};
-    //targetSpeed = {targetL,targetR};
-}*/
 /*
 
 void serialEvent() {

@@ -16,11 +16,14 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5366b6ee-0032-4496-b7d7-6902eec1b1ab" name="Changes" comment="saving what I have so far for finding current position">
+    <list default="true" id="5366b6ee-0032-4496-b7d7-6902eec1b1ab" name="Changes" comment="Skeleton for Demo one complete. I just need to do lots of testing and debugging.">
+      <change afterPath="$PROJECT_DIR$/../Simulation and Control/RobotControl/.idea/RobotControl.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../Mini Project/Simulation and Control/FinalController/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindRobotTf.mlx" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindRobotTf.mlx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Simulation and Control/Experiments/steerData.mat" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/Experiments/steerData.mat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Simulation and Control/RobotControl/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/RobotControl/src/main.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../Simulation and Control/SteeringStepExperimentCLion/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/SteeringStepExperimentCLion/src/main.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -57,19 +60,20 @@
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
     <property name="cmake.loaded.for.project" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Simulation and Control/RobotControl" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="settings.editor.selected.configurable" value="org.jetbrains.plugins.github.ui.GithubSettingsConfigurable" />
   </component>
-  <component name="RunManager" selected="PlatformIO.PlatformIO Debug">
-    <configuration name="Z_DUMMY_TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FInalRobotControlDemo1" TARGET_NAME="Z_DUMMY_TARGET" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="FInalRobotControlDemo1" RUN_TARGET_NAME="Z_DUMMY_TARGET">
+  <component name="RunManager" selected="PlatformIO.PlatformIO Upload">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration name="Z_DUMMY_TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FInalRobotControlDemo1" TARGET_NAME="Z_DUMMY_TARGET" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="FInalRobotControlDemo1" RUN_TARGET_NAME="Z_DUMMY_TARGET">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -99,7 +103,10 @@
       <option name="presentableId" value="Default" />
       <updated>1646603471480</updated>
       <workItem from="1646603473627" duration="22231000" />
-      <workItem from="1646769964370" duration="3982000" />
+      <workItem from="1646769964370" duration="6188000" />
+      <workItem from="1646856292133" duration="539000" />
+      <workItem from="1646857066208" duration="740000" />
+      <workItem from="1647029253852" duration="1198000" />
     </task>
     <task id="LOCAL-00001" summary="saving what I have so far for finding current position">
       <created>1646625473069</created>
@@ -115,7 +122,14 @@
       <option name="project" value="LOCAL" />
       <updated>1646684383132</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Skeleton for Demo one complete. I just need to do lots of testing and debugging.">
+      <created>1646775312758</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1646775312759</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -134,7 +148,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="saving what I have so far for finding current position" />
-    <option name="LAST_COMMIT_MESSAGE" value="saving what I have so far for finding current position" />
+    <MESSAGE value="Skeleton for Demo one complete. I just need to do lots of testing and debugging." />
+    <option name="LAST_COMMIT_MESSAGE" value="Skeleton for Demo one complete. I just need to do lots of testing and debugging." />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
