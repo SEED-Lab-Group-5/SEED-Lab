@@ -98,8 +98,8 @@ float rho_dot = 0;
 float phi_dot = 0;
 volatile float distanceLeft = 0;
 volatile float distanceRight = 0;
-const float WHEEL_RADIUS = 2.875;              //Radius of wheel in inches
-const float WHEELBASE = 13.75;                  //Wheelbase measurement in inches
+const float WHEEL_RADIUS = 2.935;              	// Radius of wheel in inches
+const float WHEELBASE = 13.625;                  //Wheelbase measurement in inches
 int nLeft = 1;
 int nRight = 1;
 
@@ -194,7 +194,7 @@ void loop() {
 			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);*/
 
 			// If elapsed time is between 1s and 2s
-			if(millis() - start >= 1000 && millis() - start <= 2000) {
+			if(millis() - start >= 1000 && millis() - start <= 5000) {
 				// Print elapsed time, target speed, and angular velocity for each motor
 				Serial.print(millis() - start); // elapsed time in ms
 				Serial.print("\t");
@@ -215,7 +215,7 @@ void loop() {
 		}
 
 		// After 2s, turn off the motors and tell Matlab the experiment is done.
-		if(millis() - start > 2000 && run1) {
+		if(millis() - start > 5000 && run1) {
 			Serial.println("Finished1");
 			motors.setSpeeds(0,0);
 			motorEncR.write(0);  // Reset encoders
@@ -270,7 +270,7 @@ void loop() {
 //			distanceLeft = nLeft*2*PI*pow(WHEEL_RADIUS,2);
 
 			// If elapsed time is between 1s and 2s
-			if(millis() - start2 >= 1000 && millis() - start2 <= 2000) {
+			if(millis() - start2 >= 1000 && millis() - start2 <= 5000) {
 				// Print elapsed time, target speed, and angular velocity for each motor
 				Serial.print(millis() - start2); // elapsed time in ms
 				Serial.print("\t");
@@ -292,7 +292,7 @@ void loop() {
 
 
 		// After 2s, turn off the motors and tell Matlab the experiment is done.
-		if(millis()-start2 > 2000 && run2) {
+		if(millis()-start2 > 5000 && run2) {
 			run2 = false;
 			Serial.println("Finished2");
 			motors.setSpeeds(0,0);

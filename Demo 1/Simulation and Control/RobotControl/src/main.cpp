@@ -8,8 +8,8 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
 // TARGETS
-float rho = 0, targetRho = 0; 		//!< current and target distances in inches
-float phi = 0, targetPhi = 3600; 	//!< current and target angles in radians
+float rho = 0, targetRho = 10*12; 		//!< current and target distances in inches
+float phi = 0, targetPhi = 180; 	//!< current and target angles in radians
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -28,7 +28,11 @@ struct Pair {
 
 // Controller Parameters
 const float KP_RHO = 41.507628, KI_RHO = 0.000000, KD_RHO = 0.000000; 	//!< Rho controller constants
-const float KP_PHI = 260.542014, KI_PHI = 0.000000, KD_PHI = 0.000000; 	//!< Phi controller constants
+//const float KP_PHI = 260.542014, KI_PHI = 0.000000, KD_PHI = 0.000000; 	//!< Phi controller constants
+
+//const float KP_RHO = 99.494050, KI_RHO = 1, KD_RHO = 0.000000;
+const float KP_PHI = 260.542014, KI_PHI = 0, KD_PHI = 0.000000; 	//!< Phi controller constants
+
 
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 float error, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
@@ -127,7 +131,9 @@ void loop() {
 			// Calculate Va
 			motorSum = controlRho(rho-rhoOffset,targetRho,KP_RHO,KI_RHO,KD_RHO);
 		}
+		//motorSum = controlRho(rho-rhoOffset,targetRho,KP_RHO,KI_RHO,KD_RHO);
 	}
+
 	// Determine Va,L and Va,R based on motorDif and motorSum
 	setMotorValues(motorDif,motorSum);
 	// Set the motors to the new speeds
@@ -142,7 +148,7 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	// Calculate P component
 	P = KP * error;
 	// Calculate I component
-	I_rho += KI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
+	if(abs(error)<5) I_rho += KI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
 	// Calculate D component
 	if (currentTime > 0) {
 		D = (error - pastErrorRho) / float(CONTROL_SAMPLE_RATE / 1000.0);
@@ -155,19 +161,32 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	if(output > MAX_SPEED) output = MAX_SPEED;
 	if(output < -MAX_SPEED) output = -MAX_SPEED;
 
+	// if sum or diff is greater than 0 and the target speeds are too low, set the motors to their minimum speeds
+//	if(error > 0.01 && output < 90) output = 90;
+//	if(error < -0.01 && output > -90) output = -90;
+
 	// Make sure the output is large enough if the error is significant enough.
 	// The magnitude of each motor speed must be greater than ~40 for it to turn
-	if(error > 0.5 && output < 80) output = 80;
-	if(error < -0.5 && output > -80) output = -80;
+	if(error > 0.1 && output < 90) output = 90;
+	if(error < -0.1 && output > -90) output = -90;
 
 	// Print current controller values for testing
-	Serial.print("\nrho: "); Serial.print(current);
-	Serial.print("\ttargetRho: "); Serial.print(desired);
-	Serial.print("\terror: "); Serial.print(error);
-	Serial.print("\tP: "); Serial.print(P);
-	Serial.print("\tI: "); Serial.print(I_phi);
-	Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tSum: "); Serial.println(output);
+	Serial.print(millis()-startTime);
+	Serial.print('\t'); Serial.print(current);
+	Serial.print('\t'); Serial.print(desired);
+	Serial.print('\t'); Serial.print(error);
+	Serial.print('\t'); Serial.print(P);
+	Serial.print('\t'); Serial.print(I_rho);
+	Serial.print('\t'); Serial.print(D);
+	Serial.print('\t'); Serial.println(output);
+
+//	Serial.print("\nrho: "); Serial.print(current);
+//	Serial.print("\ttargetRho: "); Serial.print(desired);
+//	Serial.print("\terror: "); Serial.print(error);
+//	Serial.print("\tP: "); Serial.print(P);
+//	Serial.print("\tI: "); Serial.print(I_rho);
+//	Serial.print("\tD: "); Serial.print(D);
+//	Serial.print("\tSum: "); Serial.println(output);
 
 	// Return the updated motorSum
 	return output;
@@ -184,8 +203,8 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	P = KP * error;
 
 	// Calculate I component
-	I_phi += KI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
-
+	//if(abs(error)>0 && abs(error) < 0.05) I_phi += KI * error;
+	I_phi += KI * error;
 	// Calculate D component
 	if (currentTime > 0) {
 		D = (error - pastErrorPhi) / float(CONTROL_SAMPLE_RATE / 1000.0);
@@ -201,8 +220,12 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	if(output < -MAX_SPEED) output = -MAX_SPEED;
 
 	// Make sure the output is large enough. Each motor speed must be greater than ~40 for the motor to move
-	if(error > 0.1 && output < 80) output = 80;
-	if(error < -0.1 && output > -80) output = -80;
+	if(error >= 0.1 && output < 75) output = 75;
+	if(error <= -0.1 && output > -75) output = -75;
+
+
+//	if(error > 0.01 && output < 90) output = 90;
+//	if(error < -0.01 && output > -90) output = -90;
 
 	// Print current values for testing
 	Serial.print("\nphi: "); Serial.print(current);
