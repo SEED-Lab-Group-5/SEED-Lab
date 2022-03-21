@@ -9,7 +9,7 @@
 
 // TARGETS
 float rho = 0, targetRho = 0; 		//!< current and target distances in inches
-float phi = 0, targetPhi = 360; 	//!< current and target angles in radians
+float phi = 0, targetPhi = 1*360; 	//!< current and target angles in radians
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -63,6 +63,7 @@ const float RADIUS = 2.9375;              		//!< Measured radius of wheels in in
 const float BASE = 13.8;                 			//!< Distance between center of wheels in inches
 const float RAD_CONVERSION = float(2.0*PI)/CPR;			//!< Scalar to convert counts to radians
 const int MAX_SPEED = 400;   							//!< Maximum scaled PWM (max motor speed = 400)
+const int MIN_SPEED = 76;
 #define ENC_R_WHITE 2 									//!< Right motor encoder output B (white wire)
 #define ENC_R_YELLOW 5  								//!< Right motor encoder output A (yellow wire)
 #define ENC_L_WHITE 3									//!< Left motor encoder output B (white wire)
@@ -157,8 +158,8 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 
 	// Make sure the output is large enough if the error is significant enough.
 	// The magnitude of each motor speed must be greater than ~40 for it to turn
-	if(error > 0.5 && output < 80) output = 80;
-	if(error < -0.5 && output > -80) output = -80;
+	if(error > 0.5 && output < MIN_SPEED) output = MIN_SPEED;
+	if(error < -0.5 && output > -MIN_SPEED) output = -MIN_SPEED;
 
 	// Print current controller values for testing
 	Serial.print("\nrho: "); Serial.print(current);
@@ -201,8 +202,8 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	if(output < -MAX_SPEED) output = -MAX_SPEED;
 
 	// Make sure the output is large enough. Each motor speed must be greater than ~40 for the motor to move
-	if(error > 0.1 && output < 80) output = 80;
-	if(error < -0.1 && output > -80) output = -80;
+	if(error > 0.1 && output < MIN_SPEED) output = MIN_SPEED;
+	if(error < -0.1 && output > -MIN_SPEED) output = -MIN_SPEED;
 
 	// Print current values for testing
 	Serial.print("\nphi: "); Serial.print(current);
