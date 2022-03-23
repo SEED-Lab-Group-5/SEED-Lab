@@ -9,7 +9,7 @@
 
 // TARGETS
 float rho = 0, targetRho = 0; 		//!< current and target distances in inches
-float phi = 0, targetPhi = 3600; 	//!< current and target angles in radians
+float phi = 0, targetPhi = 360; 	//!< current and target angles in radians
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -60,7 +60,7 @@ float controlPhi(float current, float desired, float KP, float KI, float KD);
 // Numeric Constants and Conversions
 const float CPR = 50.0*64.0;							//!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
 const float RADIUS = 2.9375;              		//!< Measured radius of wheels in inches
-const float BASE = 13.65;                 			//!< Distance between center of wheels in inches
+const float BASE = 13.8;                 			//!< Distance between center of wheels in inches
 const float RAD_CONVERSION = float(2.0*PI)/CPR;			//!< Scalar to convert counts to radians
 const int MAX_SPEED = 400;   							//!< Maximum scaled PWM (max motor speed = 400)
 #define ENC_R_WHITE 2 									//!< Right motor encoder output B (white wire)
