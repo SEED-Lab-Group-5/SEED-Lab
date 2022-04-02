@@ -63,7 +63,7 @@ const float RADIUS = 2.9375;              		//!< Measured radius of wheels in in
 const float BASE = 13.8;                 			//!< Distance between center of wheels in inches
 const float RAD_CONVERSION = float(2.0*PI)/CPR;			//!< Scalar to convert counts to radians
 const int MAX_SPEED = 400;   							//!< Maximum scaled PWM (max motor speed = 400)
-const int MIN_SPEED = 76;
+const int MIN_SPEED = 84;								//!< Minimum scaled PWM
 #define ENC_R_WHITE 2 									//!< Right motor encoder output B (white wire)
 #define ENC_R_YELLOW 5  								//!< Right motor encoder output A (yellow wire)
 #define ENC_L_WHITE 3									//!< Left motor encoder output B (white wire)
