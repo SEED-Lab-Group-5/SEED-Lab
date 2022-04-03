@@ -8,8 +8,8 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
 // TARGETS
-float rho = 0, targetRho = 0; 		//!< current and target distances in inches
-float phi = 0, targetPhi = 1*360; 	//!< current and target angles in radians
+float rho = 0, targetRho = 24; 		//!< current and target distances in inches
+float phi = 0, targetPhi = 180; 	//!< current and target angles in radians
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -27,14 +27,14 @@ struct Pair {
 };
 
 // Controller Parameters
-const float KP_RHO = 41.507628, KI_RHO = 0.000000, KD_RHO = 0.000000; 	//!< Rho controller constants
-const float KP_PHI = 260.542014, KI_PHI = 0.000000, KD_PHI = 0.000000; 	//!< Phi controller constants
+const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000; 	//!< Rho controller constants
+const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000; 	//!< Phi controller constants
 
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 float error, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
 float I_rho = 0, I_phi = 0;								//!< Integral controller accumulations
 unsigned long currentTime = 0, startTime = 0;           //!< For creating a discrete time controller
-
+const long BLINK_RATE = 1000;
 /**
  * Sets motorSum based on error
  * @param current current forward counts
@@ -80,6 +80,8 @@ Pair<long> counts;     	//!< Left and right encoder readings (counts)
 bool firstRho = true;			//!< Flag for accurately determining forward counts after rotating
 float rhoOffset = 0;			//!< Contains initial forward counts after rotating
 float motorDif, motorSum; 		//!< Parameters for speed control. motorDif [-400,400] and motorSum [-400, 400]
+bool rotating = true;			//!< Flag indicating the robot is currently turning
+bool driving = true;			//!< Flag indicating the robot is currently moving forward
 Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
 
 /**
@@ -88,8 +90,14 @@ Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() each
  * @param sum Va = the target sum of Va,L and Va,R
  */
 void setMotorValues(float dif, float sum);
+/**
+ * Turns on the LED if the target positions were reached
+ */
+void showStatus();
 
 void setup() {
+	pinMode(LED_BUILTIN, OUTPUT);
+
 	// Begin serial communication
 	Serial.begin(9600);
 
@@ -119,8 +127,15 @@ void loop() {
 		// Calculate ∆Va
 		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180),KP_PHI,KI_PHI,KD_PHI);
 
+		rotating = abs(motorDif) >= 20;
+		if(rotating) Serial.print("Rotating\t");
+
+		/*
+		 * Do initial rotation
+		 * If rotation needs to be adjusted: stop moving forward
+		 */
 		// When the robot finishes rotating, start moving forward
-		if(abs(motorDif) < 20) {
+		if(!rotating) {
 			if(firstRho) { // When the robot finishes the first rotation, set the initial forward counts
 				rhoOffset = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
 				firstRho = false;
@@ -128,11 +143,18 @@ void loop() {
 			// Calculate Va
 			motorSum = controlRho(rho-rhoOffset,targetRho,KP_RHO,KI_RHO,KD_RHO);
 		}
+
 	}
+
+	if(rotating) motorSum = 0;
+	else motorDif = 0;
+
+
 	// Determine Va,L and Va,R based on motorDif and motorSum
 	setMotorValues(motorDif,motorSum);
 	// Set the motors to the new speeds
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
+	showStatus();
 }
 
 // Need two controllers. One to use rho to set commandSum and one to use phi to set commandDifference
@@ -140,10 +162,20 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	float P = 0, D = 0, output = 0;
 	// Calculate error
 	error = desired - current;
+
+	// If the error is really small or really big, clear the accumulated I to prevent overshoot
+	if(abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
+
+
+	// Give I some help if the error changes sign
+	if(error < 0 && I_rho > 0) I_rho = 0;
+	if(error > 0 && I_rho < 0) I_rho = 0;
+
 	// Calculate P component
 	P = KP * error;
 	// Calculate I component
-	I_rho += KI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
+	I_rho += KI * float(CONTROL_SAMPLE_RATE) * error;
+
 	// Calculate D component
 	if (currentTime > 0) {
 		D = (error - pastErrorRho) / float(CONTROL_SAMPLE_RATE / 1000.0);
@@ -158,17 +190,17 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 
 	// Make sure the output is large enough if the error is significant enough.
 	// The magnitude of each motor speed must be greater than ~40 for it to turn
-	if(error > 0.5 && output < MIN_SPEED) output = MIN_SPEED;
-	if(error < -0.5 && output > -MIN_SPEED) output = -MIN_SPEED;
+	//if(error > 0 && output < MIN_SPEED) output = MIN_SPEED;
+	//if(error < 0 && output > -MIN_SPEED) output = -MIN_SPEED;
 
 	// Print current controller values for testing
-	Serial.print("\nrho: "); Serial.print(current);
-	Serial.print("\ttargetRho: "); Serial.print(desired);
-	Serial.print("\terror: "); Serial.print(error);
+	//Serial.print("\nrho: "); Serial.print(current);
+	//Serial.print("\ttargetRho: "); Serial.print(desired);
+	Serial.print("\tRho error: "); Serial.print(error,5);
 	Serial.print("\tP: "); Serial.print(P);
 	Serial.print("\tI: "); Serial.print(I_phi);
-	Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tSum: "); Serial.println(output);
+	//Serial.print("\tD: "); Serial.print(D);
+	Serial.print("\tnewSum: "); Serial.print(output);
 
 	// Return the updated motorSum
 	return output;
@@ -184,8 +216,15 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	// Calculate P component
 	P = KP * error;
 
+	// If the error is really small or really big, clear the accumulated I to prevent overshoot
+	if(abs(error) <= 0.001) I_phi = 0;
+
+	// Give I some help if the error changes sign
+	if(error < 0 && I_phi > 0) I_phi = 0;
+	if(error > 0 && I_phi < 0) I_phi = 0;
+
 	// Calculate I component
-	I_phi += KI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
+	I_phi += KI * float(CONTROL_SAMPLE_RATE) * error;
 
 	// Calculate D component
 	if (currentTime > 0) {
@@ -202,16 +241,16 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	if(output < -MAX_SPEED) output = -MAX_SPEED;
 
 	// Make sure the output is large enough. Each motor speed must be greater than ~40 for the motor to move
-	if(error > 0.1 && output < MIN_SPEED) output = MIN_SPEED;
-	if(error < -0.1 && output > -MIN_SPEED) output = -MIN_SPEED;
+	//if(error > 0 && output < MIN_SPEED) output = MIN_SPEED;
+	//if(error < 0 && output > -MIN_SPEED) output = -MIN_SPEED;
 
 	// Print current values for testing
-	Serial.print("\nphi: "); Serial.print(current);
-	Serial.print("\ttargetPhi: "); Serial.print(desired);
-	Serial.print("\terror: "); Serial.print(error);
+//	Serial.print("\nphi: "); Serial.print(current);
+//	Serial.print("\ttargetPhi: "); Serial.print(desired);
+	Serial.print("\tPhi error: "); Serial.print(error,5);
 	Serial.print("\tP: "); Serial.print(P);
 	Serial.print("\tI: "); Serial.print(I_phi);
-	Serial.print("\tD: "); Serial.print(D);
+//	Serial.print("\tD: "); Serial.print(D);
 	Serial.print("\tnewDif: "); Serial.println(output);
 
 	// Return the updated motorDif
@@ -223,6 +262,9 @@ void setMotorValues(float dif, float sum) {
 
 	target.R = (sum - dif) / float(2.0);
 	target.L = (sum + dif) / float(2.0);
+	// TODO should I offset the targets?
+	if(target.L < 0) target.L += 2.487932;
+	if(target.L > 0) target.L -= 2.487932;
 
 	// Make sure the new speeds are within [-MAX_SPEED, MAX_SPEED]
 	if(target.R > MAX_SPEED) target.R = MAX_SPEED;
@@ -231,5 +273,14 @@ void setMotorValues(float dif, float sum) {
 	if(target.L < -MAX_SPEED) target.L = -MAX_SPEED;
 
 	// Update the global targetSpeed variable
+	// Average Difference (L-R): 2.487932
 	targetSpeed = {int(target.L),int(target.R)};
+}
+
+void showStatus() {
+	if(targetSpeed.R < 20 && targetSpeed.L < 20) {
+		digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on
+	} else {
+		digitalWrite(LED_BUILTIN, LOW);    // turn the LED off
+	}
 }
