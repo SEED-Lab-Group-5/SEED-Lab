@@ -1,6 +1,8 @@
 // Alex Curtis
 // Final Controller for Demo 1
 
+//TODO fix the localization. Angle is very inaccurate
+
 #include "DualMC33926MotorShield.h"
 #include "Encoder.h"
 #include "Arduino.h"
@@ -8,8 +10,8 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
 // TARGETS
-float rho = 0, targetRho = 12*5; 		//!< current and target distances in inches
-float phi = 0, targetPhi = 0; 	//!< current and target angles in radians
+float rho = 0, targetRho = 6; 		//!< current and target distances in inches
+float phi = 0, targetPhi = 360; 	//!< current and target angles in radians
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -27,8 +29,8 @@ struct Pair {
 };
 
 // Controller Parameters
-const float KP_RHO = 41.507628, KI_RHO = 1, KD_RHO = 0.000000; 	//!< Rho controller constants
-const float KP_PHI = 260.542014, KI_PHI = 1, KD_PHI = 0.000000; 	//!< Phi controller constants
+const float KP_RHO = 35.638836, KI_RHO = 17.532965, KD_RHO = 0.000000; 	//!< Rho controller constants
+const float KP_PHI = 238.778998, KI_PHI = 124.273019, KD_PHI = 0.000000; 	//!< Phi controller constants
 
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 float error, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
@@ -173,7 +175,7 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	// Calculate P component
 	P = KP * error;
 	// Calculate I component
-	I_rho += KI * float(CONTROL_SAMPLE_RATE) * error;
+	I_rho += KI * float(CONTROL_SAMPLE_RATE*0.001) * error;
 
 	// Calculate D component
 	if (currentTime > 0) {
@@ -223,7 +225,7 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	if(error > 0 && I_phi < 0) I_phi = 0;
 
 	// Calculate I component
-	I_phi += KI * float(CONTROL_SAMPLE_RATE) * error;
+	I_phi += KI * float(CONTROL_SAMPLE_RATE*0.001) * error;
 
 	// Calculate D component
 	if (currentTime > 0) {
@@ -246,7 +248,7 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	// Print current values for testing
 //	Serial.print("\nphi: "); Serial.print(current);
 //	Serial.print("\ttargetPhi: "); Serial.print(desired);
-	Serial.print("\tPhi error: "); Serial.print(error,5);
+	Serial.print("\tPhi error: "); Serial.print(error*(180/PI),5);
 	Serial.print("\tP: "); Serial.print(P);
 	Serial.print("\tI: "); Serial.print(I_phi);
 //	Serial.print("\tD: "); Serial.print(D);
