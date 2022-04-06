@@ -1,5 +1,4 @@
-// Alex Curtis
-// Final Controller for Demo 1
+
 
 #include "DualMC33926MotorShield.h"
 #include "Encoder.h"
@@ -8,8 +7,10 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
 // TARGETS
-float rho = 0, targetRho = 12*5; 		//!< current and target distances in inches
-float phi = 0, targetPhi = 0; 	//!< current and target angles in radians
+float rho = 0, targetRho = 0; 		//!< current and target distances in inches
+float phi = 0, targetPhi = 90; 	//!< current and target angles in radians
+
+void runState();
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -27,34 +28,17 @@ struct Pair {
 };
 
 // Controller Parameters
-const float KP_RHO = 41.507628, KI_RHO = 1, KD_RHO = 0.000000; 	//!< Rho controller constants
-const float KP_PHI = 260.542014, KI_PHI = 1, KD_PHI = 0.000000; 	//!< Phi controller constants
+const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000; 	//!< Rho controller constants
+const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000; 	//!< Phi controller constants
 
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 float error, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
 float I_rho = 0, I_phi = 0;								//!< Integral controller accumulations
 unsigned long currentTime = 0, startTime = 0;           //!< For creating a discrete time controller
+const long BLINK_RATE = 1000;
 
-/**
- * Sets motorSum based on error
- * @param current current forward counts
- * @param desired desired forward counts
- * @param KP Kp value
- * @param KI Ki value
- * @param KD Kd value
- * @return Va,L + Va,R (motorSum)
- */
 float controlRho(float current, float desired, float KP, float KI, float KD);
 
-/**
- * Sets motorDif based on error
- * @param current current angular counts
- * @param desired desired angular counts
- * @param KP Kp value
- * @param KI Ki value
- * @param KD Kd value
- * @return ∆Va (motorDif)
- */
 float controlPhi(float current, float desired, float KP, float KI, float KD);
 
 // Numeric Constants and Conversions
@@ -81,6 +65,7 @@ bool firstRho = true;			//!< Flag for accurately determining forward counts afte
 float rhoOffset = 0;			//!< Contains initial forward counts after rotating
 float motorDif, motorSum; 		//!< Parameters for speed control. motorDif [-400,400] and motorSum [-400, 400]
 bool rotating = true;			//!< Flag indicating the robot is currently turning
+bool driving = true;			//!< Flag indicating the robot is currently moving forward
 Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
 
 /**
@@ -112,12 +97,17 @@ void setup() {
 }
 
 void loop() {
+	runState();
+}
+
+void runState(){
 
 	// Update encoder counts
 	counts = {EncL.read(), -EncR.read()};
 	// Find current robot positions
 	phi = (RADIUS * RAD_CONVERSION * float(counts.L - counts.R)) / BASE;
 	rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
+
 
 	// Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
 	if (millis()-startTime >= currentTime + CONTROL_SAMPLE_RATE) {
@@ -126,7 +116,7 @@ void loop() {
 		// Calculate ∆Va
 		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180),KP_PHI,KI_PHI,KD_PHI);
 
-		rotating = abs(motorDif) >= 70;
+		rotating = abs(motorDif) >= 20;
 		if(rotating) Serial.print("Rotating\t");
 
 		/*
@@ -148,7 +138,6 @@ void loop() {
 	if(rotating) motorSum = 0;
 	else motorDif = 0;
 
-
 	// Determine Va,L and Va,R based on motorDif and motorSum
 	setMotorValues(motorDif,motorSum);
 	// Set the motors to the new speeds
@@ -160,6 +149,8 @@ void loop() {
 float controlRho(float current, float desired, const float KP, const float KI, const float KD) {
 	float P = 0, D = 0, output = 0;
 	// Calculate error
+
+
 	error = desired - current;
 
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
@@ -239,10 +230,6 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	if(output > MAX_SPEED) output = MAX_SPEED;
 	if(output < -MAX_SPEED) output = -MAX_SPEED;
 
-	// Make sure the output is large enough. Each motor speed must be greater than ~40 for the motor to move
-	//if(error > 0 && output < MIN_SPEED) output = MIN_SPEED;
-	//if(error < 0 && output > -MIN_SPEED) output = -MIN_SPEED;
-
 	// Print current values for testing
 //	Serial.print("\nphi: "); Serial.print(current);
 //	Serial.print("\ttargetPhi: "); Serial.print(desired);
@@ -261,9 +248,9 @@ void setMotorValues(float dif, float sum) {
 
 	target.R = (sum - dif) / float(2.0);
 	target.L = (sum + dif) / float(2.0);
-	// TODO should I offset the targets?
-	if(target.L < 0) target.L -= 1.58884;
-	if(target.L > 0) target.L += 1.58884;
+
+	if(target.L < 0) target.L += 2.487932;
+	if(target.L > 0) target.L -= 2.487932;
 
 	// Make sure the new speeds are within [-MAX_SPEED, MAX_SPEED]
 	if(target.R > MAX_SPEED) target.R = MAX_SPEED;
@@ -272,7 +259,7 @@ void setMotorValues(float dif, float sum) {
 	if(target.L < -MAX_SPEED) target.L = -MAX_SPEED;
 
 	// Update the global targetSpeed variable
-	// Average Difference (L-R): 1.58884
+	// Average Difference (L-R): 2.487932
 	targetSpeed = {int(target.L),int(target.R)};
 }
 
