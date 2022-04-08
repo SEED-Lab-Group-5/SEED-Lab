@@ -4,11 +4,12 @@
 #include "Encoder.h"
 #include "Arduino.h"
 #include <Wire.h>
+
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
 // TARGETS
-float rho = 0, targetRho = 0; 		//!< current and target distances in inches
-float phi = 0, targetPhi = 90; 	//!< current and target angles in radians
+float rho = 0, targetRho = 0;        //!< current and target distances in inches
+float phi = 0, targetPhi = 90;        //!< current and target angles in radians
 
 bool tapeFound = false;         //flag to know whether to search for the tape or not
 void runState();
@@ -19,57 +20,57 @@ void initialCameraRead();
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
 template<typename T>
 struct Pair {
-	T L; T R;
-	Pair operator+(const T & a) const {			return Pair<T>( {T(L)+a, T(R)+a} );	};
-	Pair operator+(const Pair<T> & a) const {	return Pair<T>( {T(L)+a.L, T(R)+a.R} ); };
-	Pair operator-(const T & a) const { 		return Pair<T>( {T(L)-a, T(R)-a} ); };
-	Pair operator-(const Pair<T> & a) const {	return Pair<T>( {T(L)-a.L, T(R)-a.R} ); };
-	Pair operator*(const T & a) const { 		return Pair<T>( {T(L)*a, T(R)*a} ); };
-	Pair operator*(const Pair<T> & a) const {	return Pair<T>( {T(L)*a.L, T(R)*a.R} ); };
-	Pair operator/(const T & a) const {			return Pair<T>( {T(L)/a, T(R)/a} ); };
-	Pair operator/(const Pair<T> & a) const {	return Pair<T>( {T(L)/a.L, T(R)/a.R} );	};
+	T L;
+	T R;
+	Pair operator+(const T &a) const { return Pair<T>({T(L) + a, T(R) + a}); };
+	Pair operator+(const Pair<T> &a) const { return Pair<T>({T(L) + a.L, T(R) + a.R}); };
+	Pair operator-(const T &a) const { return Pair<T>({T(L) - a, T(R) - a}); };
+	Pair operator-(const Pair<T> &a) const { return Pair<T>({T(L) - a.L, T(R) - a.R}); };
+	Pair operator*(const T &a) const { return Pair<T>({T(L) * a, T(R) * a}); };
+	Pair operator*(const Pair<T> &a) const { return Pair<T>({T(L) * a.L, T(R) * a.R}); };
+	Pair operator/(const T &a) const { return Pair<T>({T(L) / a, T(R) / a}); };
+	Pair operator/(const Pair<T> &a) const { return Pair<T>({T(L) / a.L, T(R) / a.R}); };
 };
 
 // Controller Parameters
-const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000; 	//!< Rho controller constants
-const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000; 	//!< Phi controller constants
+const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000;    //!< Rho controller constants
+const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000;    //!< Phi controller constants
 
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 float error, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
-float I_rho = 0, I_phi = 0;								//!< Integral controller accumulations
+float I_rho = 0, I_phi = 0;                                //!< Integral controller accumulations
 unsigned long currentTime = 0, startTime = 0;           //!< For creating a discrete time controller
-const long BLINK_RATE = 1000;
 
 float controlRho(float current, float desired, float KP, float KI, float KD);
 
 float controlPhi(float current, float desired, float KP, float KI, float KD);
 
 // Numeric Constants and Conversions
-const float CPR = 50.0*64.0;							//!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
-const float RADIUS = 2.9375;              		        //!< Measured radius of wheels in inches
-const float BASE = 13.8;                 			    //!< Distance between center of wheels in inches
-const float RAD_CONVERSION = float(2.0*PI)/CPR;			//!< Scalar to convert counts to radians
-const int MAX_SPEED = 400;   							//!< Maximum scaled PWM (max motor speed = 400)
-const int MIN_SPEED = 84;								//!< Minimum scaled PWM
-#define ENC_R_WHITE 2 									//!< Right motor encoder output B (white wire)
-#define ENC_R_YELLOW 5  								//!< Right motor encoder output A (yellow wire)
-#define ENC_L_WHITE 3									//!< Left motor encoder output B (white wire)
-#define ENC_L_YELLOW 6									//!< Left motor encoder output A (yellow wire)
+const float CPR = 50.0 *64.0;                            //!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
+const float RADIUS = 2.9375;                            //!< Measured radius of wheels in inches
+const float BASE = 13.8;                                //!< Distance between center of wheels in inches
+const float RAD_CONVERSION = float(2.0 * PI) / CPR;            //!< Scalar to convert counts to radians
+const int MAX_SPEED = 400;                            //!< Maximum scaled PWM (max motor speed = 400)
+const int MIN_SPEED = 84;                                //!< Minimum scaled PWM
+#define ENC_R_WHITE 2                                    //!< Right motor encoder output B (white wire)
+#define ENC_R_YELLOW 5                                //!< Right motor encoder output A (yellow wire)
+#define ENC_L_WHITE 3                                    //!< Left motor encoder output B (white wire)
+#define ENC_L_YELLOW 6                                    //!< Left motor encoder output A (yellow wire)
 
 // Motor Encoder Objects
 Encoder EncR(ENC_R_WHITE, ENC_R_YELLOW); //!< Right motor encoder
 Encoder EncL(ENC_L_WHITE, ENC_L_YELLOW); //!< Left motor encoder
 
 // Motor Shield Object
-DualMC33926MotorShield motors; 	//!< Motor 2 is the right wheel
+DualMC33926MotorShield motors;    //!< Motor 2 is the right wheel
 
-Pair<long> counts;     	        //!< Left and right encoder readings (counts)
-bool firstRho = true;			//!< Flag for accurately determining forward counts after rotating
-float rhoOffset = 0;			//!< Contains initial forward counts after rotating
-float motorDif, motorSum; 		//!< Parameters for speed control. motorDif [-400,400] and motorSum [-400, 400]
-bool rotating = true;			//!< Flag indicating the robot is currently turning
-bool driving = true;			//!< Flag indicating the robot is currently moving forward
-Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
+Pair<long> counts;                	//!< Left and right encoder readings (counts)
+bool firstRho = true;            	//!< Flag for accurately determining forward counts after rotating
+float rhoOffset = 0;            	//!< Contains initial forward counts after rotating
+float motorDif, motorSum;        	//!< Parameters for speed control. motorDif [-400,400] and motorSum [-400, 400]
+bool rotating = true;            	//!< Flag indicating the robot is currently turning
+bool driving = true;            	//!< Flag indicating the robot is currently moving forward
+Pair<int> targetSpeed;            	//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
 
 /**
  * setMotorValues() Determines Va,L and Va,R based on dif and sum
@@ -77,6 +78,7 @@ Pair<int> targetSpeed;			//!< Scaled PWM values given to motors.setSpeeds() each
  * @param sum Va = the target sum of Va,L and Va,R
  */
 void setMotorValues(float dif, float sum);
+
 /**
  * Turns on the LED if the target positions were reached
  */
@@ -100,36 +102,34 @@ void setup() {
 }
 
 void loop() {
-    scanForTape();
+	scanForTape();
 	runState();
 }
 
-
-void scanForTape(){
-    byte increment = 1;
-    initialCameraRead();
-
-    // Update encoder counts
-    counts = {EncL.read(), -EncR.read()};
-    // Find current robot positions
-    phi = (RADIUS * float(counts.L - counts.R)) / BASE; //removed RAD_CONVERSION to have degree
-    targetSpeed = {100,100};
-
-    while(tapeFound = false && phi < 2*PI){
-        while(phi < (increment * 20)){
-            motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
-        }
-        initialCameraRead();
-        increment++;
-    }
+void initialCameraRead() {
+	//TODO read from camera whether tape is seen or not
 }
 
-void initialCameraRead(){
-    //TODO read from camera whether tape is seen or not
+void scanForTape() {
+	byte increment = 1;
+	initialCameraRead();
+
+	// Update encoder counts
+	counts = {EncL.read(), -EncR.read()};
+	// Find current robot positions
+	phi = (RADIUS * float(counts.L - counts.R)) / BASE; //removed RAD_CONVERSION to have degree
+	targetSpeed = {100, 100};
+
+	while (!tapeFound && phi < 2 * PI) {
+		while (phi < (increment * 20)) {
+			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
+		}
+		initialCameraRead();
+		increment++;
+	}
 }
 
-
-void runState(){
+void runState() {
 
 	// Update encoder counts
 	counts = {EncL.read(), -EncR.read()};
@@ -139,35 +139,35 @@ void runState(){
 
 
 	// Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
-	if (millis()-startTime >= currentTime + CONTROL_SAMPLE_RATE) {
+	if (millis() - startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 		// Determine next time to update motorDif and motorSum
 		currentTime += CONTROL_SAMPLE_RATE;
 		// Calculate ∆Va
-		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180),KP_PHI,KI_PHI,KD_PHI);
+		motorDif = controlPhi(phi, targetPhi * float(PI) / float(180), KP_PHI, KI_PHI, KD_PHI);
 
 		rotating = abs(motorDif) >= 20;
-		if(rotating) Serial.print("Rotating\t");
+		if (rotating) Serial.print("Rotating\t");
 
 		/*
 		 * Do initial rotation
 		 * If rotation needs to be adjusted: stop moving forward
 		 */
 		// When the robot finishes rotating, start moving forward
-		if(!rotating) {
-			if(firstRho) { // When the robot finishes the first rotation, set the initial forward counts
+		if (!rotating) {
+			if (firstRho) { // When the robot finishes the first rotation, set the initial forward counts
 				rhoOffset = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
 				firstRho = false;
 			}
 			// Calculate Va
-			motorSum = controlRho(rho-rhoOffset,targetRho,KP_RHO,KI_RHO,KD_RHO);
+			motorSum = controlRho(rho - rhoOffset, targetRho, KP_RHO, KI_RHO, KD_RHO);
 		}
 	}
 
-	if(rotating) motorSum = 0;
+	if (rotating) motorSum = 0;
 	else motorDif = 0;
 
 	// Determine Va,L and Va,R based on motorDif and motorSum
-	setMotorValues(motorDif,motorSum);
+	setMotorValues(motorDif, motorSum);
 	// Set the motors to the new speeds
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 	showStatus();
@@ -182,12 +182,12 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	error = desired - current;
 
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
-	if(abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
+	if (abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
 
 
 	// Give I some help if the error changes sign
-	if(error < 0 && I_rho > 0) I_rho = 0;
-	if(error > 0 && I_rho < 0) I_rho = 0;
+	if (error < 0 && I_rho > 0) I_rho = 0;
+	if (error > 0 && I_rho < 0) I_rho = 0;
 
 	// Calculate P component
 	P = KP * error;
@@ -203,8 +203,8 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	// Calculate total controller output
 	output = P + I_rho + D;
 	// Make sure the output is within [-MAX_SPEED, MAX_SPEED]
-	if(output > MAX_SPEED) output = MAX_SPEED;
-	if(output < -MAX_SPEED) output = -MAX_SPEED;
+	if (output > MAX_SPEED) output = MAX_SPEED;
+	if (output < -MAX_SPEED) output = -MAX_SPEED;
 
 	// Make sure the output is large enough if the error is significant enough.
 	// The magnitude of each motor speed must be greater than ~40 for it to turn
@@ -214,11 +214,15 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	// Print current controller values for testing
 	//Serial.print("\nrho: "); Serial.print(current);
 	//Serial.print("\ttargetRho: "); Serial.print(desired);
-	Serial.print("\tRho error: "); Serial.print(error,5);
-	Serial.print("\tP: "); Serial.print(P);
-	Serial.print("\tI: "); Serial.print(I_phi);
+	Serial.print("\tRho error: ");
+	Serial.print(error, 5);
+	Serial.print("\tP: ");
+	Serial.print(P);
+	Serial.print("\tI: ");
+	Serial.print(I_phi);
 	//Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tnewSum: "); Serial.print(output);
+	Serial.print("\tnewSum: ");
+	Serial.print(output);
 
 	// Return the updated motorSum
 	return output;
@@ -235,11 +239,11 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	P = KP * error;
 
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
-	if(abs(error) <= 0.001) I_phi = 0;
+	if (abs(error) <= 0.001) I_phi = 0;
 
 	// Give I some help if the error changes sign
-	if(error < 0 && I_phi > 0) I_phi = 0;
-	if(error > 0 && I_phi < 0) I_phi = 0;
+	if (error < 0 && I_phi > 0) I_phi = 0;
+	if (error > 0 && I_phi < 0) I_phi = 0;
 
 	// Calculate I component
 	I_phi += KI * float(CONTROL_SAMPLE_RATE) * error;
@@ -255,46 +259,43 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	output = P + I_phi + D;
 
 	// Make sure the output is within [-MAX_SPEED, MAX_SPEED]
-	if(output > MAX_SPEED) output = MAX_SPEED;
-	if(output < -MAX_SPEED) output = -MAX_SPEED;
+	if (output > MAX_SPEED) output = MAX_SPEED;
+	if (output < -MAX_SPEED) output = -MAX_SPEED;
 
 	// Print current values for testing
 //	Serial.print("\nphi: "); Serial.print(current);
 //	Serial.print("\ttargetPhi: "); Serial.print(desired);
-	Serial.print("\tPhi error: "); Serial.print(error,5);
-	Serial.print("\tP: "); Serial.print(P);
-	Serial.print("\tI: "); Serial.print(I_phi);
+	Serial.print("\tPhi error: ");
+	Serial.print(error, 5);
+	Serial.print("\tP: ");
+	Serial.print(P);
+	Serial.print("\tI: ");
+	Serial.print(I_phi);
 //	Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tnewDif: "); Serial.println(output);
+	Serial.print("\tnewDif: ");
+	Serial.println(output);
 
 	// Return the updated motorDif
 	return output;
 }
 
 void setMotorValues(float dif, float sum) {
-	Pair<float> target = {0,0}; 		//!< Motor outputs
+	Pair<float> target = {0, 0};        //!< Motor outputs
 
 	target.R = (sum - dif) / float(2.0);
 	target.L = (sum + dif) / float(2.0);
 
-	if(target.L < 0) target.L += 2.487932;
-	if(target.L > 0) target.L -= 2.487932;
+	if (target.L < 0) target.L += 2.487932;
+	if (target.L > 0) target.L -= 2.487932;
 
 	// Make sure the new speeds are within [-MAX_SPEED, MAX_SPEED]
-	if(target.R > MAX_SPEED) target.R = MAX_SPEED;
-	if(target.L > MAX_SPEED) target.L = MAX_SPEED;
-	if(target.R < -MAX_SPEED) target.R = -MAX_SPEED;
-	if(target.L < -MAX_SPEED) target.L = -MAX_SPEED;
+	if (target.R > MAX_SPEED) target.R = MAX_SPEED;
+	if (target.L > MAX_SPEED) target.L = MAX_SPEED;
+	if (target.R < -MAX_SPEED) target.R = -MAX_SPEED;
+	if (target.L < -MAX_SPEED) target.L = -MAX_SPEED;
 
 	// Update the global targetSpeed variable
 	// Average Difference (L-R): 2.487932
-	targetSpeed = {int(target.L),int(target.R)};
+	targetSpeed = {int(target.L), int(target.R)};
 }
 
-void showStatus() {
-	if(targetSpeed.R < 20 && targetSpeed.L < 20) {
-		digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on
-	} else {
-		digitalWrite(LED_BUILTIN, LOW);    // turn the LED off
-	}
-}
