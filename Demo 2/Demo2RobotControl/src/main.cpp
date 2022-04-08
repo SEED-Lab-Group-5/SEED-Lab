@@ -10,7 +10,10 @@
 float rho = 0, targetRho = 0; 		//!< current and target distances in inches
 float phi = 0, targetPhi = 90; 	//!< current and target angles in radians
 
+bool tapeFound = false;         //flag to know whether to search for the tape or not
 void runState();
+void scanForTape();
+void initialCameraRead();
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -43,8 +46,8 @@ float controlPhi(float current, float desired, float KP, float KI, float KD);
 
 // Numeric Constants and Conversions
 const float CPR = 50.0*64.0;							//!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
-const float RADIUS = 2.9375;              		//!< Measured radius of wheels in inches
-const float BASE = 13.8;                 			//!< Distance between center of wheels in inches
+const float RADIUS = 2.9375;              		        //!< Measured radius of wheels in inches
+const float BASE = 13.8;                 			    //!< Distance between center of wheels in inches
 const float RAD_CONVERSION = float(2.0*PI)/CPR;			//!< Scalar to convert counts to radians
 const int MAX_SPEED = 400;   							//!< Maximum scaled PWM (max motor speed = 400)
 const int MIN_SPEED = 84;								//!< Minimum scaled PWM
@@ -60,7 +63,7 @@ Encoder EncL(ENC_L_WHITE, ENC_L_YELLOW); //!< Left motor encoder
 // Motor Shield Object
 DualMC33926MotorShield motors; 	//!< Motor 2 is the right wheel
 
-Pair<long> counts;     	//!< Left and right encoder readings (counts)
+Pair<long> counts;     	        //!< Left and right encoder readings (counts)
 bool firstRho = true;			//!< Flag for accurately determining forward counts after rotating
 float rhoOffset = 0;			//!< Contains initial forward counts after rotating
 float motorDif, motorSum; 		//!< Parameters for speed control. motorDif [-400,400] and motorSum [-400, 400]
@@ -97,8 +100,34 @@ void setup() {
 }
 
 void loop() {
+    scanForTape();
 	runState();
 }
+
+
+void scanForTape(){
+    byte increment = 1;
+    initialCameraRead();
+
+    // Update encoder counts
+    counts = {EncL.read(), -EncR.read()};
+    // Find current robot positions
+    phi = (RADIUS * float(counts.L - counts.R)) / BASE; //removed RAD_CONVERSION to have degree
+    targetSpeed = {100,100};
+
+    while(tapeFound = false && phi < 2*PI){
+        while(phi < (increment * 20)){
+            motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
+        }
+        initialCameraRead();
+        increment++;
+    }
+}
+
+void initialCameraRead(){
+    //TODO read from camera whether tape is seen or not
+}
+
 
 void runState(){
 
@@ -132,7 +161,6 @@ void runState(){
 			// Calculate Va
 			motorSum = controlRho(rho-rhoOffset,targetRho,KP_RHO,KI_RHO,KD_RHO);
 		}
-
 	}
 
 	if(rotating) motorSum = 0;
