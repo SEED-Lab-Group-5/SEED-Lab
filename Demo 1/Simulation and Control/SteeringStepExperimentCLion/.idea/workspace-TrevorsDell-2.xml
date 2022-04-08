@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="SteeringStepExperimentCLion" targetName="Debug" />
+      <config projectName="SteeringStepExperimentCLion" targetName="Z_DUMMY_TARGET" />
+      <config projectName="SteeringStepExperimentCLion" targetName="Production" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="uno" ENABLED="true" CONFIG_NAME="uno" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="951d22c3-73b4-4f07-aed3-f034a488ccad" name="Changes" comment="I updated commandSum and commandDif to be consistent with the changes I made in RobotControl">
+      <change afterPath="$PROJECT_DIR$/../RobotControl/.idea/RobotControl.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Mini Project/Simulation and Control/FinalController/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../FInalRobotControlDemo1/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../FInalRobotControlDemo1/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../FInalRobotControlDemo1/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../FInalRobotControlDemo1/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Experiments/SteeringFindRobotTf.mlx" beforeDir="false" afterPath="$PROJECT_DIR$/../Experiments/SteeringFindRobotTf.mlx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Experiments/steerData.mat" beforeDir="false" afterPath="$PROJECT_DIR$/../Experiments/steerData.mat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../RobotControl/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../RobotControl/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:uno" />
+  <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="ACurtis0 &lt;curtis@mines.edu&gt;" />
+      </list>
+    </option>
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$/../../.." value="master" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2021" />
+    <option name="minorVersion" value="3.3" />
+  </component>
+  <component name="ProjectId" id="25nYJlB08EngXzZ4i5E7CXQZLYf" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="RunOnceActivity.cidr.known.project.marker" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="cidr.known.project.marker" value="true" />
+    <property name="cmake.loaded.for.project" value="true" />
+    <property name="com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File" value="ObjectiveC" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Confirmation" />
+    <property name="structure.view.defaults.are.configured" value="true" />
+  </component>
+  <component name="RunManager" selected="PlatformIO.PlatformIO Upload">
+    <configuration name="Z_DUMMY_TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="SteeringStepExperimentCLion" TARGET_NAME="Z_DUMMY_TARGET" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="SteeringStepExperimentCLion" RUN_TARGET_NAME="Z_DUMMY_TARGET">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PlatformIO Debug" type="platformio" factoryName="PlatformIO Debug" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="SteeringStepExperimentCLion" TARGET_NAME="Debug" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="SteeringStepExperimentCLion" RUN_TARGET_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PlatformIO Upload" type="platformio" factoryName="PlatformIO Upload" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="SteeringStepExperimentCLion" TARGET_NAME="Production" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="SteeringStepExperimentCLion" RUN_TARGET_NAME="Production">
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="CMake Application.Z_DUMMY_TARGET" />
+      <item itemvalue="PlatformIO.PlatformIO Debug" />
+      <item itemvalue="PlatformIO.PlatformIO Upload" />
+    </list>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="951d22c3-73b4-4f07-aed3-f034a488ccad" name="Changes" comment="" />
+      <created>1646164250070</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1646164250070</updated>
+      <workItem from="1646164252083" duration="1811000" />
+      <workItem from="1646188729177" duration="248000" />
+      <workItem from="1646252291920" duration="1305000" />
+      <workItem from="1646258770522" duration="1467000" />
+      <workItem from="1646352713202" duration="760000" />
+      <workItem from="1646421800229" duration="5044000" />
+      <workItem from="1646429650946" duration="3689000" />
+      <workItem from="1646435523200" duration="13653000" />
+      <workItem from="1646532740434" duration="12828000" />
+      <workItem from="1646609073280" duration="462000" />
+      <workItem from="1646679438484" duration="3074000" />
+      <workItem from="1646685050932" duration="3410000" />
+      <workItem from="1646689051208" duration="204000" />
+      <workItem from="1646689297500" duration="288000" />
+      <workItem from="1646690569626" duration="7256000" />
+      <workItem from="1646768412307" duration="9145000" />
+      <workItem from="1646853205520" duration="9630000" />
+      <workItem from="1647029018763" duration="1665000" />
+      <workItem from="1647116161704" duration="2698000" />
+      <workItem from="1647133270512" duration="1382000" />
+      <workItem from="1647203962882" duration="2414000" />
+    </task>
+    <task id="LOCAL-00001" summary="Testing Clion integration">
+      <created>1646423798999</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1646423798999</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Testing Clion integration">
+      <created>1646424049199</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1646424049199</updated>
+    </task>
+    <task id="LOCAL-00003" summary="I was doing the experiment wrong. I'm in the process of restructuring everything">
+      <created>1646433695157</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1646433695157</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Crazy structs are way more fun than individual variables :)">
+      <created>1646448616519</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1646448616519</updated>
+    </task>
+    <task id="LOCAL-00005" summary="I wired the robot and set up the encoders. Still need to deal with a few things to make sure everything agrees on which way is forward.">
+      <created>1646544795401</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1646544795401</updated>
+    </task>
+    <task id="LOCAL-00006" summary="I wired the robot and set up the encoders. Still need to deal with a few things to make sure everything agrees on which way is forward.">
+      <created>1646597723451</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1646597723451</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Done with setMotorValues() and the directions for the motors and encoders agree">
+      <created>1646601227001</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1646601227001</updated>
+    </task>
+    <task id="LOCAL-00008" summary="test">
+      <created>1646689581328</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1646689581328</updated>
+    </task>
+    <task id="LOCAL-00009" summary="I got the rotation experiment working but the data is super choppy.">
+      <created>1646698876054</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1646698876054</updated>
+    </task>
+    <task id="LOCAL-00010" summary="I got the rotation experiment working but the data is super choppy.">
+      <created>1646768722988</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1646768722988</updated>
+    </task>
+    <task id="LOCAL-00011" summary="I made a TON of modifications to both experiments to try and prevent noise in the data and to make it faster. There were a bunch of math operations happening that could be condensed.">
+      <created>1646779624172</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1646779624172</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Updated some comments and cleaned it up">
+      <created>1646780006445</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1646780006445</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Theres a rounding error somewhere in the calculations for rho and phi.">
+      <created>1646865529939</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1646865529939</updated>
+    </task>
+    <task id="LOCAL-00014" summary="I updated commandSum and commandDif to be consistent with the changes I made in RobotControl">
+      <created>1647130521829</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1647130521829</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.History.Properties">
+    <option name="SHOW_OTHER_BRANCHES" value="true" />
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+      </list>
+    </option>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="FORCE_NON_EMPTY_COMMENT" value="true" />
+    <MESSAGE value="Testing Clion integration" />
+    <MESSAGE value="I was doing the experiment wrong. I'm in the process of restructuring everything" />
+    <MESSAGE value="Crazy structs are way more fun than individual variables :)" />
+    <MESSAGE value="I wired the robot and set up the encoders. Still need to deal with a few things to make sure everything agrees on which way is forward." />
+    <MESSAGE value="Done with setMotorValues() and the directions for the motors and encoders agree" />
+    <MESSAGE value="we have rho!" />
+    <MESSAGE value="we have rho" />
+    <MESSAGE value="New outputs" />
+    <MESSAGE value="New outputs!" />
+    <MESSAGE value="test" />
+    <MESSAGE value="I got the rotation experiment working but the data is super choppy." />
+    <MESSAGE value="I made a TON of modifications to both experiments to try and prevent noise in the data and to make it faster. There were a bunch of math operations happening that could be condensed." />
+    <MESSAGE value="Updated some comments and cleaned it up" />
+    <MESSAGE value="Theres a rounding error somewhere in the calculations for rho and phi." />
+    <MESSAGE value="I updated commandSum and commandDif to be consistent with the changes I made in RobotControl" />
+    <option name="LAST_COMMIT_MESSAGE" value="I updated commandSum and commandDif to be consistent with the changes I made in RobotControl" />
+  </component>
+</project>
