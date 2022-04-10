@@ -94,7 +94,7 @@ def size_down(img):
     img = cv.resize(img, imgtuple)
     return img
 
-
+#outputs a mask of the bird's eye view 
 def birds_eye_(img):
     #resize for quicker processing  
     imgtuple = (cols,rows)
@@ -141,7 +141,7 @@ def measure_line(img):
 
     return mask
 
-#will return the length of a line the robot is aligned with and at the base of
+#will return the distance to the start of a line the robot is aligned with
 def measure_distance_to_start(img):
     mask = birds_eye_(img)
     
@@ -161,7 +161,7 @@ def measure_distance_to_start(img):
 
     return mask
  
-    
+#returns a masked wide view for angle measurment
 def wide_angle_(img):
     
     #resize for quicker processing  
@@ -208,6 +208,7 @@ def measure_angle(img):
     #--------------------------------------/\Image Measurment/\--------------------------------------
     return mask
 
+#returns the angle to the lowest point of blue tape in the image
 def measure_angle_to_start(img):
     mask = wide_angle_(img)
     #--------------------------------------\/Image Measurment\/--------------------------------------
@@ -232,7 +233,7 @@ def show_img(img2show):
     cv.imshow('frame', img2show)
     
 
-# The Finite state Loop
+# The Finite state Loop - primarily for testing
 
 while True:
     state = "angle"
