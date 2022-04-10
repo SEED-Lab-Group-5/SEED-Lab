@@ -159,20 +159,3 @@ int control(float current, float desired) {
 	return int(newSpeed);
 }
 
-// Callback for received data
-void receiveData(int byteCount) {
-
-	// While there are still bytes to read, read them and store the most recent to number
-	while (Wire.available()) {
-		int nextAngleCoef = Wire.read();
-		unsigned long currSampleTime = millis();
-		// If time since previous sample exceeds SAMPLE_TIME receive a new input
-		if (millis() - prevSampleTime > PI_SAMPLE_TIME) {
-			angleRead = true;
-			desiredAngleCoeff = nextAngleCoef;
-			prevSampleTime = currSampleTime;
-			Serial.print("Desired Angle: ");
-			Serial.println(desiredAngleCoeff);
-		}
-	}
-}
