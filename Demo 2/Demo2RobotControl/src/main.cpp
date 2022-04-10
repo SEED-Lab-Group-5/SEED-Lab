@@ -1,5 +1,3 @@
-
-
 #include "DualMC33926MotorShield.h"
 #include "Encoder.h"
 #include "Arduino.h"
@@ -9,12 +7,13 @@
 
 // TARGETS
 float rho = 0, targetRho = 0;        //!< current and target distances in inches
-float phi = 0, targetPhi = 90;        //!< current and target angles in radians
+float phi = 0, targetPhi = 0;        //!< current and target angles in radians
 
 bool tapeFound = false;         //flag to know whether to search for the tape or not
-void runState();
+bool runState();
 void scanForTape();
 void initialCameraRead();
+void encoderReset();
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
 // Operator overloading allows me to perform math operations on both elements at the same time (like multiplying both by a scalar)
@@ -42,7 +41,6 @@ float I_rho = 0, I_phi = 0;                                //!< Integral control
 unsigned long currentTime = 0, startTime = 0;           //!< For creating a discrete time controller
 
 float controlRho(float current, float desired, float KP, float KI, float KD);
-
 float controlPhi(float current, float desired, float KP, float KI, float KD);
 
 // Numeric Constants and Conversions
@@ -62,7 +60,7 @@ Encoder EncR(ENC_R_WHITE, ENC_R_YELLOW); //!< Right motor encoder
 Encoder EncL(ENC_L_WHITE, ENC_L_YELLOW); //!< Left motor encoder
 
 // Motor Shield Object
-DualMC33926MotorShield motors;    //!< Motor 2 is the right wheel
+DualMC33926MotorShield motors;    	//!< Motor 2 is the right wheel
 
 Pair<long> counts;                	//!< Left and right encoder readings (counts)
 bool firstRho = true;            	//!< Flag for accurately determining forward counts after rotating
@@ -73,19 +71,13 @@ bool driving = true;            	//!< Flag indicating the robot is currently mov
 Pair<int> targetSpeed;            	//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
 
 /**
- * setMotorValues() Determines Va,L and Va,R based on dif and sum
+ * computeSpeeds() Determines Va,L and Va,R based on dif and sum
  * @param dif ∆Va = the target difference between Va,L and Va,R
  * @param sum Va = the target sum of Va,L and Va,R
  */
-void setMotorValues(float dif, float sum);
-
-/**
- * Turns on the LED if the target positions were reached
- */
-void showStatus();
+void computeSpeeds(float dif, float sum);
 
 void setup() {
-	pinMode(LED_BUILTIN, OUTPUT);
 
 	// Begin serial communication
 	Serial.begin(9600);
@@ -102,12 +94,36 @@ void setup() {
 }
 
 void loop() {
+    //testing
+    targetRho = Serial.available();
+
+    //testing end
 	scanForTape();
 	runState();
 }
 
+void encoderReset(){
+    EncR.write(0);  // Reset encoders
+    EncL.write(0);
+}
+void getPositions() {
+	// Update encoder counts
+	counts = {EncL.read(), -EncR.read()};
+	// Find current robot positions
+	phi = (RADIUS * RAD_CONVERSION * float(counts.L - counts.R)) / BASE;
+	rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
+}
+
 void initialCameraRead() {
 	//TODO read from camera whether tape is seen or not
+    while (Serial.available() == 0){
+        int camInput = Serial.read();
+        if (camInput = 1){
+            tapeFound = true;
+        }else{
+            tapeFound = false;
+        }
+    }
 }
 
 void scanForTape() {
@@ -129,15 +145,7 @@ void scanForTape() {
 	}
 }
 
-void runState() {
-
-	// Update encoder counts
-	counts = {EncL.read(), -EncR.read()};
-	// Find current robot positions
-	phi = (RADIUS * RAD_CONVERSION * float(counts.L - counts.R)) / BASE;
-	rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
-
-
+Pair<float> computeControllers() {
 	// Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
 	if (millis() - startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 		// Determine next time to update motorDif and motorSum
@@ -166,24 +174,33 @@ void runState() {
 	if (rotating) motorSum = 0;
 	else motorDif = 0;
 
+	return {motorDif,motorSum};
+}
+
+bool runState() {
+
+	getPositions();
+	Pair<float> controlOutput = {0,0};
+
+	controlOutput = computeControllers();
+	motorDif = controlOutput.L;
+	motorSum = controlOutput.R;
+
 	// Determine Va,L and Va,R based on motorDif and motorSum
-	setMotorValues(motorDif, motorSum);
+	computeSpeeds(motorDif, motorSum);
 	// Set the motors to the new speeds
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
-	showStatus();
+
 }
 
 // Need two controllers. One to use rho to set commandSum and one to use phi to set commandDifference
 float controlRho(float current, float desired, const float KP, const float KI, const float KD) {
 	float P = 0, D = 0, output = 0;
 	// Calculate error
-
-
 	error = desired - current;
 
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
 	if (abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
-
 
 	// Give I some help if the error changes sign
 	if (error < 0 && I_rho > 0) I_rho = 0;
@@ -206,24 +223,6 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	if (output > MAX_SPEED) output = MAX_SPEED;
 	if (output < -MAX_SPEED) output = -MAX_SPEED;
 
-	// Make sure the output is large enough if the error is significant enough.
-	// The magnitude of each motor speed must be greater than ~40 for it to turn
-	//if(error > 0 && output < MIN_SPEED) output = MIN_SPEED;
-	//if(error < 0 && output > -MIN_SPEED) output = -MIN_SPEED;
-
-	// Print current controller values for testing
-	//Serial.print("\nrho: "); Serial.print(current);
-	//Serial.print("\ttargetRho: "); Serial.print(desired);
-	Serial.print("\tRho error: ");
-	Serial.print(error, 5);
-	Serial.print("\tP: ");
-	Serial.print(P);
-	Serial.print("\tI: ");
-	Serial.print(I_phi);
-	//Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tnewSum: ");
-	Serial.print(output);
-
 	// Return the updated motorSum
 	return output;
 }
@@ -234,10 +233,8 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 
 	// Calculate error
 	error = desired - current;
-
 	// Calculate P component
 	P = KP * error;
-
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
 	if (abs(error) <= 0.001) I_phi = 0;
 
@@ -262,24 +259,11 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	if (output > MAX_SPEED) output = MAX_SPEED;
 	if (output < -MAX_SPEED) output = -MAX_SPEED;
 
-	// Print current values for testing
-//	Serial.print("\nphi: "); Serial.print(current);
-//	Serial.print("\ttargetPhi: "); Serial.print(desired);
-	Serial.print("\tPhi error: ");
-	Serial.print(error, 5);
-	Serial.print("\tP: ");
-	Serial.print(P);
-	Serial.print("\tI: ");
-	Serial.print(I_phi);
-//	Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tnewDif: ");
-	Serial.println(output);
-
 	// Return the updated motorDif
 	return output;
 }
 
-void setMotorValues(float dif, float sum) {
+void computeSpeeds(float dif, float sum) {
 	Pair<float> target = {0, 0};        //!< Motor outputs
 
 	target.R = (sum - dif) / float(2.0);
@@ -298,4 +282,3 @@ void setMotorValues(float dif, float sum) {
 	// Average Difference (L-R): 2.487932
 	targetSpeed = {int(target.L), int(target.R)};
 }
-

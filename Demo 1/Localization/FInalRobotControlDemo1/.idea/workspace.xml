@@ -17,14 +17,47 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5366b6ee-0032-4496-b7d7-6902eec1b1ab" name="Changes" comment="Skeleton for Demo one complete. I just need to do lots of testing and debugging.">
-      <change afterPath="$PROJECT_DIR$/../Simulation and Control/RobotControl/.idea/RobotControl.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../Mini Project/Simulation and Control/FinalController/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindRobotTf.mlx" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/Experiments/SteeringFindRobotTf.mlx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Simulation and Control/Experiments/steerData.mat" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/Experiments/steerData.mat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Simulation and Control/RobotControl/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/RobotControl/src/main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Simulation and Control/SteeringStepExperimentCLion/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Simulation and Control/SteeringStepExperimentCLion/src/main.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/.idea/workspace-Alex's MacBook.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/CMakeLists.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/include/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/.arduino-ci.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/.github/ISSUE_TEMPLATE/bug-report-or-feature-request.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/.github/ISSUE_TEMPLATE/config.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/.github/workflows/ci.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/.gitlab-ci.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/DualMC33926MotorShield.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/DualMC33926MotorShield.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/LICENSE.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/examples/Demo/Demo.ino" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/keywords.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/DualMC33926MotorShield/library.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/Encoder.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/Encoder.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/docs/issue_template.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/examples/Basic/Basic.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/examples/NoInterrupts/NoInterrupts.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/examples/SpeedTest/SpeedTest.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/examples/TwoKnobs/TwoKnobs.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/keywords.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/library.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/library.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/utility/direct_pin_read.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/utility/interrupt_config.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/Encoder/utility/interrupt_pins.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/lib/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/platformio.ini" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/test/README" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../Demo 2/ComputerVisionGit/FiniteState.py" beforeDir="false" afterPath="$PROJECT_DIR$/../../../Demo 2/ComputerVisionGit/FiniteState.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../Demo 2/ComputerVisionGit/README.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../../../Demo 2/ComputerVisionGit/README.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../../../Demo 2/Demo2RobotControl/src/main.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,7 +69,7 @@
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:uno" />
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -60,20 +93,21 @@
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
     <property name="cmake.loaded.for.project" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Simulation and Control/RobotControl" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="settings.editor.selected.configurable" value="org.jetbrains.plugins.github.ui.GithubSettingsConfigurable" />
+    <property name="vue.rearranger.settings.migration" value="true" />
   </component>
   <component name="RunManager" selected="PlatformIO.PlatformIO Upload">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration name="Z_DUMMY_TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FInalRobotControlDemo1" TARGET_NAME="Z_DUMMY_TARGET" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="FInalRobotControlDemo1" RUN_TARGET_NAME="Z_DUMMY_TARGET">
       <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Z_DUMMY_TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="FInalRobotControlDemo1" TARGET_NAME="Z_DUMMY_TARGET" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="FInalRobotControlDemo1" RUN_TARGET_NAME="Z_DUMMY_TARGET">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -107,6 +141,7 @@
       <workItem from="1646856292133" duration="539000" />
       <workItem from="1646857066208" duration="740000" />
       <workItem from="1647029253852" duration="1198000" />
+      <workItem from="1649445328115" duration="14000" />
     </task>
     <task id="LOCAL-00001" summary="saving what I have so far for finding current position">
       <created>1646625473069</created>
