@@ -133,8 +133,9 @@ def measure_line(img):
         #find the length of a straight line at its base to the end
         topOfLine=min(nonzero[0])/2
         #since this perspective has pixels proportional to the physical distances, a simple constant can be used to determine the distance 
-        lengthToLine = (desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-topOfLine)/perspectiveRows)+cameraToWheelOffsetIn
-        print(str(int(10*lengthToLine)/10)+" in")#outputs a double rounded to 1 decimal Place
+        lengthToLine = int((desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-topOfLine)/perspectiveRows)+cameraToWheelOffsetIn+0.5)
+        #=====================Distance Output=======================
+        print(str(lengthToLine)+" in")
         #print(str(topOfLine)+" of "+str(perspectiveRows))
     
     #--------------------------------------/\Image Measurment/\--------------------------------------
@@ -153,8 +154,9 @@ def measure_distance_to_start(img):
         #find the length of a straight line at its base to the end
         bottomOfLine=max(nonzero[0])/2
         #since this perspective has pixels proportional to the physical distances, a simple constant can be used to determine the distance 
-        lengthToLine = (desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-bottomOfLine)/perspectiveRows)+cameraToWheelOffsetIn
-        print(str(int(10*lengthToLine)/10)+" in")#outputs a double rounded to 1 decimal Place
+        lengthToLine = int((desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-bottomOfLine)/perspectiveRows)+cameraToWheelOffsetIn+0.5)
+        #=====================Distance Output=======================
+        print(str(lengthToLine)+" in")
         #print(str(bottomOfLine)+" of "+str(perspectiveRows))
     
     #--------------------------------------/\Image Measurment/\--------------------------------------
@@ -204,7 +206,10 @@ def measure_angle(img):
         location = nonzero[1].mean()
         phi = (deg(horizontalFOV)/2)*(location-cols/2)/(cols/2)
         #=====================Angle Output=======================
-        print(int(phi+0.5))#0.5 for more accurate integer rounding
+        if phi>=0:
+            print(int(phi+0.5))#0.5 for more accurate integer rounding
+        else:
+            print(int(phi-0.5))#0.5 for more accurate integer rounding
     #--------------------------------------/\Image Measurment/\--------------------------------------
     return mask
 
@@ -223,7 +228,10 @@ def measure_angle_to_start(img):
         #print(location.mean())
         phi = (deg(horizontalFOV)/2)*(location.mean()-cols/2)/(cols/2)
         #=====================Angle Output=======================
-        print(int(phi+0.5))#0.5 for more accurate integer rounding
+        if phi>=0:
+            print(int(phi+0.5))#0.5 for more accurate integer rounding
+        else:
+            print(int(phi-0.5))#0.5 for more accurate integer rounding
     #--------------------------------------/\Image Measurment/\--------------------------------------
     return mask
     
