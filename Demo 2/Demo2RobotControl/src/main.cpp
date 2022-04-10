@@ -7,6 +7,7 @@
 #define SLAVE_ADDRESS 0x04
 
 // Communication with PI
+// TODO change this to work with David's new structure
 void receiveData(int byteCount);
 bool angleRead;
 int desiredAngleCoeff = 2;              // Angle to move the motor to (Value between 0-3)
@@ -75,13 +76,12 @@ Encoder EncR(ENC_R_WHITE, ENC_R_YELLOW); //!< Right motor encoder
 Encoder EncL(ENC_L_WHITE, ENC_L_YELLOW); //!< Left motor encoder
 DualMC33926MotorShield motors;    					//!< Motor 2 is the right wheel
 
-/**
- * setMotors() Determines Va,L and Va,R based on dif and sum
- * @param dif ∆Va = the target difference between Va,L and Va,R
- * @param sum Va = the target sum of Va,L and Va,R
- */
+
 void setMotors(float dif, float sum);
 
+/**
+ * Does initial setup
+ */
 void initialize() {
 	// Begin serial communication
 	Serial.begin(9600); // TODO remove when done testing
@@ -103,6 +103,9 @@ void initialize() {
 	motors.setSpeeds(0, 0);
 }
 
+/**
+ * Check if the camera can see tape. If not, scanForTape()
+ */
 void initialCameraRead() {
 	// TODO read from camera whether tape is seen or not
 	while (Serial.available()){
@@ -111,6 +114,7 @@ void initialCameraRead() {
 	}
 }
 
+// TODO remove loop
 void setup() {
 	initialize();
 }
@@ -139,11 +143,17 @@ void runState() {
 	setMotors(motorDif, motorSum);
 }
 
+/**
+ * Reset encoder counts
+ */
 void encoderReset() {
     EncR.write(0);
     EncL.write(0);
 }
 
+/**
+ * Read current encoder counts and calculate phi and rho
+ */
 void getPositions() {
 	// Update encoder counts
 	counts = {EncL.read(), -EncR.read()};
@@ -152,7 +162,9 @@ void getPositions() {
 	rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
 }
 
-
+/**
+ * Rotate the robot until the start of the tape is found
+ */
 void scanForTape() {
 	byte increment = 1;
 	initialCameraRead();
@@ -173,12 +185,15 @@ void scanForTape() {
 	}
 }
 
+/**
+ * Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
+ * @return {motorDif, motorSum}
+ */
 Pair<float> computeControllers() {
 	// Controller Parameters
-	const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000;    //!< Rho controller constants
-	const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000;    //!< Phi controller constants
+	const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000;    	//!< Rho controller constants
+	const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000;    	//!< Phi controller constants
 
-	// Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
 	if (millis() - startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 
 		// Determine next time to update motorDif and motorSum
@@ -273,6 +288,11 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	return output;
 }
 
+/**
+ * setMotors() Determines Va,L and Va,R based on dif and sum
+ * @param dif ∆Va = the target difference between Va,L and Va,R
+ * @param sum Va = the target sum of Va,L and Va,R
+ */
 void setMotors(float dif, float sum) {
 	Pair<float> target = {0, 0};        //!< Motor outputs
 
@@ -298,7 +318,10 @@ void setMotors(float dif, float sum) {
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 }
 
-// Callback for received data
+/**
+ * Callback for received data (From mini project)
+ * @param byteCount
+ */
 void receiveData(int byteCount) {
 
 	// While there are still bytes to read, read them and store the most recent to number
