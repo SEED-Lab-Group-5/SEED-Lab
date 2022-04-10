@@ -204,7 +204,7 @@ def measure_angle(img):
         location = nonzero[1].mean()
         phi = (deg(horizontalFOV)/2)*(location-cols/2)/(cols/2)
         #=====================Angle Output=======================
-        print(int(phi))
+        print(int(phi+0.5))#0.5 for more accurate integer rounding
     #--------------------------------------/\Image Measurment/\--------------------------------------
     return mask
 
@@ -223,7 +223,7 @@ def measure_angle_to_start(img):
         #print(location.mean())
         phi = (deg(horizontalFOV)/2)*(location.mean()-cols/2)/(cols/2)
         #=====================Angle Output=======================
-        print(int(phi))
+        print(int(phi+0.5))#0.5 for more accurate integer rounding
     #--------------------------------------/\Image Measurment/\--------------------------------------
     return mask
     
