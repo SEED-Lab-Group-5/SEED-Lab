@@ -1,3 +1,19 @@
+//////////////////////////////////////////////////////////////////////// NAME:
+// CLASS:	 EENG-350
+// GROUP:    5
+// TITLE:    Demo 2
+// FUNCTION: Write what your code does here
+// HARDWARE: Any hardware connections you must make to your device
+// SOFTWARE: Any software that must be installed to the device
+// EXECUTE:  Execution instructions for your program
+// RESOURCE: Link to any resource you used
+// PURPOSE:  What the resource was used for
+// RESOURCE: Link to any resource you used
+// PURPOSE:  What the resource was used for
+//////////////////////////////////////////////////////////////////////
+
+
+
 #include "DualMC33926MotorShield.h"
 #include "Encoder.h"
 #include "Arduino.h"
@@ -28,6 +44,8 @@ struct Pair {
 	Pair operator/(const Pair<T> &a) const { return Pair<T>({T(L) / a.L, T(R) / a.R}); };
 };
 
+
+
 // Constants
 const float CPR = 3200;                            			//!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
 const float RADIUS = 2.9375;                            	//!< Measured radius of wheels in inches
@@ -52,8 +70,9 @@ unsigned long currentTime = 0, startTime = 0;           	//!< For creating a dis
 
 // Flags
 bool tapeFound = false;         	//!<flag to know whether to search for the tape or not
-bool firstRho = true;            	//!< Flag for accurately determining forward counts after rotating
+bool firstRho = true;           	//!< Flag for accurately determining forward counts after rotating
 bool rotating = true;            	//!< Flag indicating the robot is currently turning
+bool encReset = false;
 
 // Pairs
 Pair<int> targetSpeed;            	//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
@@ -63,7 +82,8 @@ Pair<long> counts;                	//!< Left and right encoder readings (counts)
 void initialize();
 void runState();
 void getPositions();
-void initialCameraRead();
+bool initialCameraRead();
+bool drive(float angle, float forward);
 Pair<float> computeControllers();
 void scanForTape();
 float controlRho(float current, float desired, float KP, float KI, float KD);
@@ -103,16 +123,7 @@ void initialize() {
 	motors.setSpeeds(0, 0);
 }
 
-/**
- * Check if the camera can see tape. If not, scanForTape()
- */
-void initialCameraRead() {
-	// TODO read from camera whether tape is seen or not
-	while (Serial.available()){
-		int camInput = (int)Serial.read();
-		tapeFound = camInput;
-	}
-}
+
 
 // TODO remove loop
 void setup() {
@@ -120,10 +131,7 @@ void setup() {
 }
 
 void loop() {
-    //testing
-    targetRho = Serial.available();
 
-    //testing end
 	scanForTape();
 	runState();
 }
@@ -163,32 +171,54 @@ void getPositions() {
 }
 
 /**
+ * Check if the camera can see tape. If not, scanForTape()
+ */
+bool initialCameraRead() {
+    // TODO read from camera whether tape is seen or not
+    int newData; int oldData;
+
+    while((Serial.available() == 0) && initialCameraRead()){
+        newData = Serial.read();
+    }
+
+    return false;
+}
+
+/**
  * Rotate the robot until the start of the tape is found
  */
 void scanForTape() {
 	byte increment = 1;
 	initialCameraRead();
 
-	// Update encoder counts
-	counts = {EncL.read(), -EncR.read()};
-	// Find current robot positions
-	phi = (RADIUS * float(counts.L - counts.R)) / BASE; //removed RAD_CONVERSION to have degree
 
 	targetSpeed = {100, 100};
 
-	while (!tapeFound && phi < (2 * PI)) {
-		while (phi < (increment * 20) ) {
-			motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
+	while ((tapeFound==false) && phi < (2 * PI)) {
+
+		while (phi < ((increment * 30)*(PI/180)) ) {
+            getPositions();
+			motors.setSpeeds(targetSpeed.L, targetSpeed.R);
 		}
 		initialCameraRead();
 		increment++;
 	}
 }
 
-/**
- * Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
- * @return {motorDif, motorSum}
- */
+bool drive(float angle, float forward){
+    targetPhi = angle;
+    targetRho = forward;
+    if(encReset == true){ ////TODO must be set to true in FSM before calling drive function
+        encoderReset();
+    }
+    encReset = false;
+
+    computeControllers();
+    if (error < 1){
+        return false;
+    }
+}
+
 Pair<float> computeControllers() {
 	// Controller Parameters
 	const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000;    	//!< Rho controller constants

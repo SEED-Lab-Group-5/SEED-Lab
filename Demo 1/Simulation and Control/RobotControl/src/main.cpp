@@ -150,7 +150,6 @@ void loop() {
 	if(rotating) motorSum = 0;
 	else motorDif = 0;
 
-
 	// Determine Va,L and Va,R based on motorDif and motorSum
 	setMotorValues(motorDif,motorSum);
 	// Set the motors to the new speeds
@@ -166,7 +165,6 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
 	if(abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
-
 
 	// Give I some help if the error changes sign
 	if(error < 0 && I_rho > 0) I_rho = 0;
