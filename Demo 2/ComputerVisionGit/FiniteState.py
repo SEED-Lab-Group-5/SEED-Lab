@@ -128,7 +128,7 @@ def measure_line(img):
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        print('No markers found')
+        print('No markers found')#tape not found flag = -50
     else:
         #find the length of a straight line at its base to the end
         topOfLine=min(nonzero[0])/2
@@ -149,7 +149,7 @@ def measure_distance_to_start(img):
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        print('No markers found')
+        print('No markers found')#tape not found flag = -50
     else:
         #find the length of a straight line at its base to the end
         bottomOfLine=max(nonzero[0])/2
@@ -200,7 +200,7 @@ def measure_angle(img):
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        print('No markers found')
+        print('No markers found')#tape not found flag = -50
     else:
         #find angle
         location = nonzero[1].mean()
@@ -219,7 +219,7 @@ def measure_angle_to_start(img):
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        print('No markers found')
+        print('No markers found')#tape not found flag = -50
     else:
         
         #find angle by lookingfor the lowest vertical pointand taking the coresponding horizontal index
