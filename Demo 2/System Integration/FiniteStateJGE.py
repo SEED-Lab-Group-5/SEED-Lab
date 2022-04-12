@@ -16,32 +16,17 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
 import math
-import smbus
-
 #import matplotlib.pyplot as plt
 print(cv.__version__)
 
+def rad(deg):#quick finction to convert rads to degrees
+    return (deg*math.pi)/180
+def deg(rad):#quick finction to convert degrees to rads
+    return (rad*180)/math.pi
 
-# for RPI version 1, use "bus = smbus.SMBus(0)"
-bus = smbus.SMBus(1)
 
-# This is the address we setup in the Arduino Program
-address = 0x04
-
-# Flags and transmission codes
-rotateComplete = False            # Indicates if robot is done rotating 
-ROTATE_COMPLETE_SET = -127  # Transmitted from Arduino when flag is set
-
-tapeFound = False             # Indicates if tape was found in the field of view
-TAPE_NOT_FOUND_SET = -126       # Transmitted to Arduino when flag is set
-
-atStart = False               # Indicates if robot has stopped moving forward
-MOTION_COMPLETE_SET = -125    # Transmitted from Arduino when flag is set
-
-currentImg = None
-currentMask = None
-blueHSV = 110#100 or 95 dependingon type of tape
-deltaHSV = 10
+blueHSV=110#100 or 95 dependingon type of tape
+deltaHSV=10
 cols = int(672)
 rows = int(496)
 horizontalFOV=rad(55.5)#FOV
@@ -54,13 +39,11 @@ cameraToWheelOffsetIn=abs(cameraHeightIn/math.tan(verticalFOV/2))#distance form 
 resizecols=abs(2*cameraToWheelOffsetIn*math.tan(horizontalFOV/2))#phisical viewing with at the corners of the camera
 showImg=True#decides if the frame is shown on the screen or not
 
-
-def rad(deg):#quick finction to convert rads to degrees
-    return (deg * math.pi) / 180
-
-
-def deg(rad):#quick finction to convert degrees to rads
-    return (rad * 180) / math.pi
+#init videocapture
+cap = cv.VideoCapture(0)
+if not cap.isOpened():
+    print("Cannot open camera")
+    exit()
 
 
 # transforms the image to see from a bird's eye view
@@ -88,7 +71,6 @@ def perspectiveShift(shapeImg):
     
     return ret
 
-
 #takes a picture
 def take_picture():
     camera = PiCamera(resolution=(cols, rows), framerate=30)
@@ -103,7 +85,6 @@ def take_picture():
     except:
         print("Failed")
 
-
 #halfs the image size for processing (may not use)
 def size_down(img):
     print("Sizing Down...")
@@ -112,7 +93,6 @@ def size_down(img):
     imgtuple = (cols,rows)
     img = cv.resize(img, imgtuple)
     return img
-
 
 #outputs a mask of the bird's eye view 
 def birds_eye_(img):
@@ -160,9 +140,7 @@ def measure_line(img):
     
     #--------------------------------------/\Image Measurment/\--------------------------------------
 
-    currentMask = mask
-    return lengthToLine
-
+    return mask
 
 #will return the distance to the start of a line the robot is aligned with
 def measure_distance_to_start(img):
@@ -171,22 +149,19 @@ def measure_distance_to_start(img):
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        lengthToLine = TAPE_NOT_FOUND_SET
         print('No markers found')#tape not found flag = -126
     else:
         #find the length of a straight line at its base to the end
         bottomOfLine=max(nonzero[0])/2
-        # since this perspective has pixels proportional to the physical distances, a simple constant can be used to determine the distance 
+        #since this perspective has pixels proportional to the physical distances, a simple constant can be used to determine the distance 
         lengthToLine = int((desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-bottomOfLine)/perspectiveRows)+cameraToWheelOffsetIn+0.5)
         #=====================Distance Output=======================
         print(str(lengthToLine)+" in")
-#        print(str(bottomOfLine)+" of "+str(perspectiveRows))
+        #print(str(bottomOfLine)+" of "+str(perspectiveRows))
     
     #--------------------------------------/\Image Measurment/\--------------------------------------
 
-    currentMask = mask
-    return lengthToLine
- 
+    return mask
  
 #returns a masked wide view for angle measurment
 def wide_angle_(img):
@@ -225,21 +200,18 @@ def measure_angle(img):
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        tapeAngle = -126
-#        print('No markers found')#tape not found flag = -126
+        print('No markers found')#tape not found flag = -126
     else:
         #find angle
         location = nonzero[1].mean()
         phi = (deg(horizontalFOV)/2)*(location-cols/2)/(cols/2)
         #=====================Angle Output=======================
         if phi>=0:
-            tapeAngle = int(phi+0.5)#0.5 for more accurate integer rounding
+            print(int(phi+0.5))#0.5 for more accurate integer rounding
         else:
-            tapeAngle = int(phi-0.5)#0.5 for more accurate integer rounding
+            print(int(phi-0.5))#0.5 for more accurate integer rounding
     #--------------------------------------/\Image Measurment/\--------------------------------------
-    currentMask = mask
-    return tapeAngle
-
+    return mask
 
 #returns the angle to the lowest point of blue tape in the image
 def measure_angle_to_start(img):
@@ -247,7 +219,7 @@ def measure_angle_to_start(img):
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        tapeAngle = -126 #tape not found flag = -126
+        print('No markers found')#tape not found flag = -126
     else:
         
         #find angle by lookingfor the lowest vertical pointand taking the coresponding horizontal index
@@ -257,207 +229,45 @@ def measure_angle_to_start(img):
         phi = (deg(horizontalFOV)/2)*(location.mean()-cols/2)/(cols/2)
         #=====================Angle Output=======================
         if phi>=0:
-            tapeAngle = int(phi+0.5)#0.5 for more accurate integer rounding
+            print(int(phi+0.5))#0.5 for more accurate integer rounding
         else:
-            tapeAngle = int(phi-0.5)#0.5 for more accurate integer rounding
+            print(int(phi-0.5))#0.5 for more accurate integer rounding
     #--------------------------------------/\Image Measurment/\--------------------------------------
-    currentMask = mask
-    return tapeAngle
+    return mask
+    
 
 
 def show_img(img2show):
     cv.imshow('frame', img2show)
     
 
- 
+# The Finite state Loop - primarily for testing
 
-
-##################
-# States
-##################
-
-# This is the start state. No code takes place here.
-def state_start():
-    print("state_start")
-    return state_FOV_rotate
-
-
-# This state primarily takes place on the arduino where the robot is rotated half its FOV clockwise. The flag
-# rotateComplete will be set to -127 and sent to the Pi when the robot has finished rotating
-def state_FOV_rotate():
-    print("state_FOV_rotate")
-    waitForRotation()    
-    return state_find_tape    # Move to next state
+while True:
+    state = "angle"
     
-    
-# Find the angle to a line of tape in the camera's FOV
-def state_find_tape():
-    print("state_find_tape")
-    
-#    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
-#    tapeAngle = -22                     # NOTE: Placeholder - Use to test if tape WAS found
-    
-    # Use the camera to measure the angle to the tape
-    tapeAngle = measure_angle(currentImg)
-    
-    # Implement find tape code here    
-    if(tapeAngle == TAPE_NOT_FOUND_SET):
-        writeData(TAPE_NOT_FOUND_SET)
-        print("\tTape Not Found")
-        return state_FOV_rotate
-    else:
-        writeData(tapeAngle)
-        print("\ttapeAngle =", tapeAngle)
-        return state_turn_to_start
-
-
-# Rotate the robot to be in line with the start of the tape path
-def state_turn_to_start():
-    print("state_turn_to_start")
-    waitForRotation()    
-    return state_calc_dist_to_start
-
-
-# Calculate the distance from the robot to the start of the tape path
-def state_calc_dist_to_start():
-    print("state_calc_dist_to_start") 
-
-#    distToStart = 22  # NOTE: Placeholder
-    
-    distToStart = measure_distance_to_start(currentImg)
-    print("\tDistance To Start =", distToStart)
-    
-    # Send the distance to start to the Arduino
-    writeData(distToStart)
-    
-    return state_drive_to_start
-
-
-# Drive the robot to the start of the tape path
-def state_drive_to_start():
-    print("state_drive_to_start")
-    waitForMotion()  
-    return state_calc_path_angle
-
-
-# Calculate the angle the robot needs to turn to to be in line with the tape path
-def state_calc_path_angle():
-    print("state_calc_path_angle")
-    
-#    angleToEnd = 10  # NOTE: Placeholder
-    
-    # Use the camera to measure the angle to the tape
-    angleToEnd = measure_angle(currentImg)
-    print("\tAngle To End =", angleToEnd)
-       
-    # Send the angle to end to the Arduino
-    writeData(angleToEnd)
-    
-    return state_turn_inline_to_path
-
-
-# Turn the robot to be in line with the tape path
-def state_turn_inline_to_path():
-    print("state_turn_inline_to_path")
-    waitForRotation()
-    return state_calc_dist_to_end
-
-
-# Calculate the distance from the robot to the end of the tape path
-def state_calc_dist_to_end():
-    print("state_calc_dist_to_end")
-
-#    distToEnd = 36  # NOTE: Placeholder  
-    distToEnd = measure_line(currentImg)
-    print("\tDistance To End =", distToEnd)
-    
-    # Send the distance to start to the Arduino
-    writeData(distToEnd)
-    
-    return state_drive_to_end
-
-
-# Drive to the end of the tape path
-def state_drive_to_end():
-    print("state_drive_to_end")
-    waitForMotion()
-    return state_stop
-
-
-# The end of the tape was reached. Exit the state machine
-def state_stop():
-    return None
-
-
-def readData():
-    data = bus.read_byte(address)
-    if (data > 127):
-        data = 256 - data
-        data *= -1
-    return data
-
-
-def writeData(value):
-    bus.write_byte(address, value)
-    return -1
-
-
-# Wait until the rotationComplete flag is transmitted from the Arduino (Robot has stopped rotating)
-def waitForRotation():
-    rotateComplete = False
-    while rotateComplete != ROTATE_COMPLETE_SET:        
-        rotateComplete = readData()    # Read from the I2C line and see if rotateComplete flag was set and transmitted       
-        print("\trotateComplete =", rotateComplete)
-        time.sleep(1)    # Wait 1 second to reduce polling
-        
-# Wait until the motionComplete flag is transmitted from the Arduino (Robot has stopped driving forward)
-def waitForMotion():
-    motionComplete = False
-    while motionComplete != MOTION_COMPLETE_SET:        
-        motionComplete = readData()    # Read from the I2C line and see if motionComplete flag was set and transmitted       
-        print("\tmotionComplete =", motionComplete)
-        time.sleep(1)    # Wait 1 second to reduce polling
-
-
-
-# initalization
-state = state_start # initial state
-
-#init videocapture
-cap = cv.VideoCapture(0)
-if not cap.isOpened():
-    print("Cannot open camera")
-    exit()
-
-
-# The Finite state Loop
-while state is not None: # Run until state is None   
     # Capture frame-by-frame
-    ret, currentImg = cap.read()
-#   #imgRGB = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-    
+    ret, img = cap.read()
+    imgRGB = cv.cvtColor(img, cv.COLOR_BGR2RGB)
     # if frame is read correctly ret is True
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
-    
     # Our operations on the frame come here
     #--------------------------------------\/Finite State\/--------------------------------------
-    new_state = state() # launch state machine
-    state = new_state # update the next state
+    if   state == "angle":
+        out=measure_angle_to_start(img)
+    else:
+        print("ERROR, enter angle bird or pass")
         
-    #--------------------------------------/\Finite State/\--------------------------------------    
+    #--------------------------------------/\Finite State/\--------------------------------------  
+    
     
     # Display the resulting frame
     if showImg:
-        try:
-            cv.imshow('frame', currentMask)
-        except:
-            cv.imshow('frame', currentImg)
+        cv.imshow('frame', out)
     if cv.waitKey(1) == ord('q'):
         break
-    
-print("Done with state machine")
 # When everything done, release the capture
 cap.release()
-cv.destroyAllWindows()   
+cv.destroyAllWindows()    
