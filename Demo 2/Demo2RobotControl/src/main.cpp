@@ -194,7 +194,7 @@ void scanForTape() {
 
 	targetSpeed = {100, 100};
 
-	while ((tapeFound==false) && phi < (2 * PI)) {
+	while (!tapeFound && phi < (2 * PI)) {
 
 		while (phi < ((increment * 30)*(PI/180)) ) {
             getPositions();
@@ -205,10 +205,10 @@ void scanForTape() {
 	}
 }
 
-bool drive(float angle, float forward){
+bool drive(float angle, float forward) {
     targetPhi = angle;
     targetRho = forward;
-    if(encReset == true){ ////TODO must be set to true in FSM before calling drive function
+    if(encReset){ ////TODO must be set to true in FSM before calling drive function
         encoderReset();
     }
     encReset = false;
@@ -221,8 +221,8 @@ bool drive(float angle, float forward){
 
 Pair<float> computeControllers() {
 	// Controller Parameters
-	const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000;    	//!< Rho controller constants
-	const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000;    	//!< Phi controller constants
+	const float KP_RHO = 41.507628, KI_RHO = 0, KD_RHO = 0.000000;    	//!< Rho controller constants
+	const float KP_PHI = 260.542014, KI_PHI = 0, KD_PHI = 0.000000;    	//!< Phi controller constants
 
 	if (millis() - startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 
@@ -310,7 +310,6 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 
 	// Calculate total controller output
 	output = P + I_phi + D;
-
 	// Make sure the output is within [-MAX_SPEED, MAX_SPEED]
 	if (output > MAX_SPEED) output = MAX_SPEED;
 	if (output < -MAX_SPEED) output = -MAX_SPEED;
