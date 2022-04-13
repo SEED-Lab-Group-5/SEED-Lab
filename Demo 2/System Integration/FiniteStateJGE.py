@@ -25,7 +25,7 @@ def deg(rad):#quick finction to convert degrees to rads
     return (rad*180)/math.pi
 
 
-blueHSV=110#100 or 95 dependingon type of tape
+blueHSV=100#100 or 95 dependingon type of tape
 deltaHSV=10
 cols = int(672)
 rows = int(496)
@@ -248,7 +248,7 @@ while True:
     
     # Capture frame-by-frame
     ret, img = cap.read()
-    imgRGB = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
     # if frame is read correctly ret is True
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")

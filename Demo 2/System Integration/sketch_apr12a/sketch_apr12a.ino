@@ -52,7 +52,6 @@ const int MAX_SPEED = 400;                              //!< Maximum scaled PWM 
 const int MIN_SPEED = 84;                               //!< Minimum scaled PWM
 const int RHO_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Rho for robot to be considered at its target Rho value
 const int PHI_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Phi for robot to be considered at its target Phi value
-const int LOOPS_WITHIN_ERROR_MIN = 3000;                 //!< Minimum number of loops through the drive function where error was within tolerance before motion is considered complete
 #define ENC_R_WHITE 2                                   //!< Right motor encoder output B (white wire)
 #define ENC_R_YELLOW 5                                  //!< Right motor encoder output A (yellow wire)
 #define ENC_L_WHITE 3                                   //!< Left motor encoder output B (white wire)
@@ -78,9 +77,6 @@ bool tapeNotFound = false;        // Indicates if tape was not found in the fiel
 
 bool motionComplete = false;      // Indicates if robot has stopped moving forward
 #define MOTION_COMPLETE_SET -125  // Transmitted to Pi when flag is set
-
-               
-#define START_STATE_MACHINE_SET -124    // Indicates the Pi is ready and the state machine should start
 
 bool flagSent = false;            // Indicates if a flag was sent to the Pi
 bool dataReceived = false;        // Indicates if data was read from the Pi
@@ -139,7 +135,7 @@ void setup() {
 //////////////////////////
 // Finite State Machine //
 //////////////////////////
-static currentState_t currentState = STOP;      ////////////////////////CHANGED from START to STOP//////////////////////////////////////
+static currentState_t currentState = START;
 void loop() {   
     int angleToStart;    // The angle to the start of the line 
     int distanceToStart; // The distance to the start of the line
@@ -149,15 +145,9 @@ void loop() {
     switch (currentState) {
         
         // The START state runs at the start of the program, no code takes place
-        case START:            
-            if (dataReceived) {
-                // If the Pi indicated no tape was found in the screen, go back to FOV_ROTATE state
-                if (data == START_STATE_MACHINE_SET) {
-                    // Move to next state          
-                    currentState = FOV_ROTATE;                
-                }
-                dataReceived = false;   // Reset dataReceived flag
-            }           
+        case START:
+            // Move to next state          
+            currentState = FOV_ROTATE;
             break;
 
 
@@ -192,7 +182,8 @@ void loop() {
                     angleToStart = data;
                     Serial.print("angleToStart = ");
                     Serial.println(angleToStart);
-                    currentState = TURN_TO_START;
+//                    currentState = TURN_TO_START;
+                    currentState = STOP;
                 }
                 dataReceived = false;   // Reset dataReceived flag
             }
@@ -314,8 +305,6 @@ void loop() {
 
         // STOP State: The end of the tape was reached. Exit the state machine
         case STOP:
-            drive(90,0);
-            currentState = START;
             break;
     }   
 }
@@ -345,10 +334,9 @@ void getPositions() {
 
 bool drive(float angle, float forward){
     Pair<float> controlOutput = {0,0};
-    int loopsWithinError = 0;
     
     // Loop until error is acceptable, signal that the robot reached the targeted values
-    while(loopsWithinError < LOOPS_WITHIN_ERROR_MIN) {
+    do {
         // Update global controller variables
         targetPhi = angle;
         targetRho = forward;
@@ -361,12 +349,8 @@ bool drive(float angle, float forward){
     
         // Determine Va,L and Va,R based on motorDif and motorSum
         setMotors(motorDif, motorSum);
-
-        if (pastErrorRho < RHO_ERROR_TOLERANCE && pastErrorPhi < PHI_ERROR_TOLERANCE){
-            loopsWithinError++;
-        }
-    } 
-    loopsWithinError = 0;
+    } while(pastErrorRho > RHO_ERROR_TOLERANCE && pastErrorPhi > PHI_ERROR_TOLERANCE);
+    
     return true;
 } // End drive
 
@@ -375,9 +359,6 @@ Pair<float> computeControllers() {
     // Controller Parameters
     const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000;      //!< Rho controller constants
     const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000;     //!< Phi controller constants
-
-//    const float KP_RHO = 41.507628, KI_RHO = 0.0, KD_RHO = 0.000000;      //!< Rho controller constants
-//    const float KP_PHI = 260.542014, KI_PHI = 0.0, KD_PHI = 0.000000;     //!< Phi controller constants
 
     if (millis() - startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 
@@ -589,7 +570,7 @@ void sendData(){
             if (rotateComplete) {
                 Wire.write(ROTATE_COMPLETE_SET);
                 flagSent = true;
-                Serial.println("Rotate FLAG Sent");
+                Serial.println("FLAG Sent");
             }
             break;     
             
@@ -599,7 +580,7 @@ void sendData(){
             if (motionComplete) {
                 Wire.write(MOTION_COMPLETE_SET);
                 flagSent = true;
-                Serial.println("motion FLAG Sent");
+                Serial.println("FLAG Sent");
             }
             break; 
     }

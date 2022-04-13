@@ -18,9 +18,16 @@ import time
 import math
 import smbus
 
+
 #import matplotlib.pyplot as plt
 print(cv.__version__)
 
+def rad(deg):#quick finction to convert rads to degrees
+    return (deg * math.pi) / 180
+
+
+def deg(rad):#quick finction to convert degrees to rads
+    return (rad * 180) / math.pi
 
 # for RPI version 1, use "bus = smbus.SMBus(0)"
 bus = smbus.SMBus(1)
@@ -38,9 +45,13 @@ TAPE_NOT_FOUND_SET = -126       # Transmitted to Arduino when flag is set
 atStart = False               # Indicates if robot has stopped moving forward
 MOTION_COMPLETE_SET = -125    # Transmitted from Arduino when flag is set
 
+startStateMachine = False
+START_STATE_MACHINE_SET = -124
+
+
 currentImg = None
 currentMask = None
-blueHSV = 110#100 or 95 dependingon type of tape
+blueHSV = 95#100 or 95 dependingon type of tape
 deltaHSV = 10
 cols = int(672)
 rows = int(496)
@@ -55,12 +66,13 @@ resizecols=abs(2*cameraToWheelOffsetIn*math.tan(horizontalFOV/2))#phisical viewi
 showImg=True#decides if the frame is shown on the screen or not
 
 
-def rad(deg):#quick finction to convert rads to degrees
-    return (deg * math.pi) / 180
-
-
-def deg(rad):#quick finction to convert degrees to rads
-    return (rad * 180) / math.pi
+def waitTime(secondsToWait):
+    startTime = time.time()
+    while time.time() < startTime + secondsToWait:
+        pass
+    return
+    
+        
 
 
 # transforms the image to see from a bird's eye view
@@ -115,17 +127,14 @@ def size_down(img):
 
 
 #outputs a mask of the bird's eye view 
-def birds_eye_(img):
+def birds_eye_(mask):
     #resize for quicker processing  
     imgtuple = (cols,rows)
-    img = cv.resize(img, imgtuple)
+    mask = cv.resize(mask, imgtuple)
 
     #=========================================\/Image Processing Block\/=========================================
     #--------------------------------------\/Image Masking\/--------------------------------------
-    imghsv = cv.cvtColor(img, cv.COLOR_RGB2HSV)
-    lower = np.array([blueHSV-deltaHSV,50,50])
-    upper = np.array([blueHSV+deltaHSV,255,255])
-    mask = cv.inRange(imghsv, lower, upper)
+    
     #--------------------------------------/\Image Masking/\--------------------------------------
 
 
@@ -143,12 +152,14 @@ def birds_eye_(img):
 
 #will return the length of a line the robot is aligned with and at the base of
 def measure_line(img):
+    waitTime(1)
     mask = birds_eye_(img)
     
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
         print('No markers found')#tape not found flag = -126
+        return TAPE_NOT_FOUND_SET
     else:
         #find the length of a straight line at its base to the end
         topOfLine=min(nonzero[0])/2
@@ -166,6 +177,7 @@ def measure_line(img):
 
 #will return the distance to the start of a line the robot is aligned with
 def measure_distance_to_start(img):
+    waitTime(1)
     mask = birds_eye_(img)
     
     #--------------------------------------\/Image Measurment\/--------------------------------------
@@ -189,18 +201,15 @@ def measure_distance_to_start(img):
  
  
 #returns a masked wide view for angle measurment
-def wide_angle_(img):
+def wide_angle_(mask):
     
     #resize for quicker processing  
     imgtuple = (cols,rows)
-    img = cv.resize(img, imgtuple)
+    mask = cv.resize(mask, imgtuple)
 
     #=========================================\/Image Processing Block\/=========================================
     #--------------------------------------\/Image Masking\/--------------------------------------
-    imghsv = cv.cvtColor(img, cv.COLOR_RGB2HSV)
-    lower = np.array([blueHSV-deltaHSV,50,50])
-    upper = np.array([blueHSV+deltaHSV,255,255])
-    mask = cv.inRange(imghsv, lower, upper)
+   
     #--------------------------------------/\Image Masking/\--------------------------------------
 
 
@@ -221,6 +230,7 @@ def wide_angle_(img):
 
 #locates and points to a tape that may be outside of the screen
 def measure_angle(img):
+    waitTime(1)
     mask = wide_angle_(img)
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
@@ -243,6 +253,7 @@ def measure_angle(img):
 
 #returns the angle to the lowest point of blue tape in the image
 def measure_angle_to_start(img):
+    waitTime(1)
     mask = wide_angle_(img)
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
@@ -294,6 +305,7 @@ def state_FOV_rotate():
 def state_find_tape():
     print("state_find_tape")
     
+    
 #    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
 #    tapeAngle = -22                     # NOTE: Placeholder - Use to test if tape WAS found
     
@@ -326,13 +338,12 @@ def state_calc_dist_to_start():
     
     distToStart = measure_distance_to_start(currentImg)
     print("\tDistance To Start =", distToStart)
-    
+    if distToStart == TAPE_NOT_FOUND_SET:
+        return state_calc_dist_to_start
     # Send the distance to start to the Arduino
     writeData(distToStart)
     
     return state_drive_to_start
-
-
 # Drive the robot to the start of the tape path
 def state_drive_to_start():
     print("state_drive_to_start")
@@ -365,10 +376,14 @@ def state_turn_inline_to_path():
 
 # Calculate the distance from the robot to the end of the tape path
 def state_calc_dist_to_end():
-    print("state_calc_dist_to_end")
+      
+#    print("state_calc_dist_to_end")
+        
 
 #    distToEnd = 36  # NOTE: Placeholder  
     distToEnd = measure_line(currentImg)
+    if distToEnd == TAPE_NOT_FOUND_SET:
+        return state_calc_dist_to_end
     print("\tDistance To End =", distToEnd)
     
     # Send the distance to start to the Arduino
@@ -423,6 +438,8 @@ def waitForMotion():
 # initalization
 state = state_start # initial state
 
+writeData(START_STATE_MACHINE_SET)
+
 #init videocapture
 cap = cv.VideoCapture(0)
 if not cap.isOpened():
@@ -434,7 +451,11 @@ if not cap.isOpened():
 while state is not None: # Run until state is None   
     # Capture frame-by-frame
     ret, currentImg = cap.read()
-#   #imgRGB = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    currentImg = cv.cvtColor(currentImg, cv.COLOR_BGR2RGB)
+    imghsv = cv.cvtColor(currentImg, cv.COLOR_RGB2HSV)
+    lower = np.array([blueHSV-deltaHSV,50,50])
+    upper = np.array([blueHSV+deltaHSV,255,255])
+    currentImg = cv.inRange(imghsv, lower, upper)
     
     # if frame is read correctly ret is True
     if not ret:
@@ -449,11 +470,8 @@ while state is not None: # Run until state is None
     #--------------------------------------/\Finite State/\--------------------------------------    
     
     # Display the resulting frame
-    if showImg:
-        try:
-            cv.imshow('frame', currentMask)
-        except:
-            cv.imshow('frame', currentImg)
+    if showImg:        
+        cv.imshow('frame', currentImg)
     if cv.waitKey(1) == ord('q'):
         break
     
