@@ -48,6 +48,8 @@ MOTION_COMPLETE_SET = -125    # Transmitted from Arduino when flag is set
 startStateMachine = False
 START_STATE_MACHINE_SET = -124
 
+MIN_CONSECUTIVE_SAME_ANGLE_COUNT = 5    # Number of concurrent angle readings that must be same before returning tape angle
+
 
 currentImg = None
 currentMask = None
@@ -70,7 +72,7 @@ def waitTime(secondsToWait):
     startTime = time.time()
     while time.time() < startTime + secondsToWait:
         pass
-    return
+    return False
     
         
 
@@ -150,9 +152,42 @@ def birds_eye_(mask):
     return out
 
 
+#locates and points to a tape that may be outside of the screen
+def measure_angle(img):
+    consecutiveSameAngleCount = 0
+    prevTapeAngle = TAPE_NOT_FOUND_SET
+    
+    # Wait until tape angle reported is the same for MIN_CONSECUTIVE_SAME_ANGLE_COUNT consecutive loops before returning angle
+    while (consecutiveSameAngleCount != MIN_CONSECUTIVE_SAME_ANGLE_COUNT):
+        mask = wide_angle_(img)
+        #--------------------------------------\/Image Measurment\/--------------------------------------
+        nonzero = np.nonzero(mask)
+        if len(nonzero[0])==0:
+            tapeAngle = TAPE_NOT_FOUND_SET
+    #        print('No markers found')#tape not found flag = -126
+        else:
+            #find angle
+            location = nonzero[1].mean()
+            phi = (deg(horizontalFOV)/2)*(location-cols/2)/(cols/2)
+            #=====================Angle Output=======================
+            if phi>=0:
+                tapeAngle = int(phi+0.5)#0.5 for more accurate integer rounding
+            else:
+                tapeAngle = int(phi-0.5)#0.5 for more accurate integer rounding
+        #--------------------------------------/\Image Measurment/\--------------------------------------
+        currentMask = mask
+        print(tapeAngle)
+        if tapeAngle == prevTapeAngle:
+            consecutiveSameAngleCount += 1
+        
+        prevTapeAngle = tapeAngle
+            
+    return tapeAngle
+
+
 #will return the length of a line the robot is aligned with and at the base of
 def measure_line(img):
-    waitTime(1)
+#    waitTime(1)
     mask = birds_eye_(img)
     
     #--------------------------------------\/Image Measurment\/--------------------------------------
@@ -177,7 +212,7 @@ def measure_line(img):
 
 #will return the distance to the start of a line the robot is aligned with
 def measure_distance_to_start(img):
-    waitTime(1)
+#    waitTime(1)
     mask = birds_eye_(img)
     
     #--------------------------------------\/Image Measurment\/--------------------------------------
@@ -228,32 +263,12 @@ def wide_angle_(mask):
     return out
 
 
-#locates and points to a tape that may be outside of the screen
-def measure_angle(img):
-    waitTime(1)
-    mask = wide_angle_(img)
-    #--------------------------------------\/Image Measurment\/--------------------------------------
-    nonzero = np.nonzero(mask)
-    if len(nonzero[0])==0:
-        tapeAngle = -126
-#        print('No markers found')#tape not found flag = -126
-    else:
-        #find angle
-        location = nonzero[1].mean()
-        phi = (deg(horizontalFOV)/2)*(location-cols/2)/(cols/2)
-        #=====================Angle Output=======================
-        if phi>=0:
-            tapeAngle = int(phi+0.5)#0.5 for more accurate integer rounding
-        else:
-            tapeAngle = int(phi-0.5)#0.5 for more accurate integer rounding
-    #--------------------------------------/\Image Measurment/\--------------------------------------
-    currentMask = mask
-    return tapeAngle
+
 
 
 #returns the angle to the lowest point of blue tape in the image
 def measure_angle_to_start(img):
-    waitTime(1)
+#    waitTime(1)
     mask = wide_angle_(img)
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
@@ -283,9 +298,9 @@ def show_img(img2show):
  
 
 
-##################
+#################################################################
 # States
-##################
+#################################################################
 
 # This is the start state. No code takes place here.
 def state_start():
@@ -305,12 +320,10 @@ def state_FOV_rotate():
 def state_find_tape():
     print("state_find_tape")
     
-    
-#    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
-#    tapeAngle = -22                     # NOTE: Placeholder - Use to test if tape WAS found
-    
     # Use the camera to measure the angle to the tape
     tapeAngle = measure_angle(currentImg)
+#    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
+#    tapeAngle = 5                     # NOTE: Placeholder - Use to test if tape WAS found
     
     # Implement find tape code here    
     if(tapeAngle == TAPE_NOT_FOUND_SET):
@@ -334,16 +347,18 @@ def state_turn_to_start():
 def state_calc_dist_to_start():
     print("state_calc_dist_to_start") 
 
-#    distToStart = 22  # NOTE: Placeholder
-    
-    distToStart = measure_distance_to_start(currentImg)
+    distToStart = 24  # NOTE: Placeholder   
+#    distToStart = measure_distance_to_start(currentImg)
     print("\tDistance To Start =", distToStart)
+    
     if distToStart == TAPE_NOT_FOUND_SET:
         return state_calc_dist_to_start
     # Send the distance to start to the Arduino
     writeData(distToStart)
     
     return state_drive_to_start
+
+
 # Drive the robot to the start of the tape path
 def state_drive_to_start():
     print("state_drive_to_start")
@@ -355,10 +370,11 @@ def state_drive_to_start():
 def state_calc_path_angle():
     print("state_calc_path_angle")
     
-#    angleToEnd = 10  # NOTE: Placeholder
+
     
     # Use the camera to measure the angle to the tape
-    angleToEnd = measure_angle(currentImg)
+    angleToEnd = 6  # NOTE: Placeholder
+#    angleToEnd = measure_angle(currentImg)
     print("\tAngle To End =", angleToEnd)
        
     # Send the angle to end to the Arduino
@@ -380,10 +396,12 @@ def state_calc_dist_to_end():
 #    print("state_calc_dist_to_end")
         
 
-#    distToEnd = 36  # NOTE: Placeholder  
-    distToEnd = measure_line(currentImg)
+    distToEnd = 36  # NOTE: Placeholder  
+#    distToEnd = measure_line(currentImg)
+    
     if distToEnd == TAPE_NOT_FOUND_SET:
         return state_calc_dist_to_end
+    
     print("\tDistance To End =", distToEnd)
     
     # Send the distance to start to the Arduino
