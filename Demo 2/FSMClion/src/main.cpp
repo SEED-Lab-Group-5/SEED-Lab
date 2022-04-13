@@ -24,9 +24,6 @@
 // Define data types needed for finite state machine
 typedef enum {START, FOV_ROTATE, FIND_TAPE, TURN_TO_START, CALC_DIST_TO_START, DRIVE_TO_START, CALC_PATH_ANGLE, TURN_INLINE_TO_PATH, CALC_DIST_TO_END, DRIVE_TO_END, STOP} currentState_t;
 
-int data = 0;   // Value to store data received over I2C
-
-
 template<typename T>
 struct Pair {
 	T L;
@@ -49,7 +46,7 @@ const float BASE = 13.8;                                //!< Distance between ce
 const float RAD_CONVERSION = float(2.0 * PI) / CPR;     //!< Scalar to convert counts to radians
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 const int MAX_SPEED = 400;                              //!< Maximum scaled PWM (max motor speed = 400)
-const int MIN_SPEED = 84;                               //!< Minimum scaled PWM
+const Pair<int> MIN_SPEED = {80,84};             //!< Minimum scaled PWM //TODO implement this
 const int RHO_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Rho for robot to be considered at its target Rho value
 const int PHI_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Phi for robot to be considered at its target Phi value
 const int LOOPS_WITHIN_ERROR_MIN = 400;                 //!< Minimum number of loops through the drive function where error was within tolerance before motion is considered complete
@@ -70,28 +67,28 @@ unsigned long currentTime = 0, startTime = 0;           //!< For creating a disc
 
 
 // Flags and transmission codes
-bool rotateComplete = false;      // Indicates if robot is done rotating 
-#define ROTATE_COMPLETE_SET -127  // Transmitted to Pi when flag is set
+bool rotateComplete = false;      	//!< Indicates if robot is done rotating
+#define ROTATE_COMPLETE_SET (-127)  //!< Transmitted to Pi when flag is set
 
-bool tapeNotFound = false;        // Indicates if tape was not found in the field of view
-#define TAPE_NOT_FOUND_SET -126   // Transmitted from Pi when flag is set
+bool tapeNotFound = false;        	//!< Indicates if tape was not found in the field of view
+#define TAPE_NOT_FOUND_SET (-126)   //!< Transmitted from Pi when flag is set
 
-bool motionComplete = false;      // Indicates if robot has stopped moving forward
-#define MOTION_COMPLETE_SET -125  // Transmitted to Pi when flag is set
+bool motionComplete = false;      	//!< Indicates if robot has stopped moving forward
+#define MOTION_COMPLETE_SET (-125)  //!< Transmitted to Pi when flag is set
+#define START_STATE_MACHINE_SET (-124)    //!< Indicates the Pi is ready and the state machine should start
 
 
-#define START_STATE_MACHINE_SET -124    // Indicates the Pi is ready and the state machine should start
-
-bool flagSent = false;            // Indicates if a flag was sent to the Pi
-bool dataReceived = false;        // Indicates if data was read from the Pi
-bool firstRho = true;             // Flag for accurately determining forward counts after rotating
-bool rotating = true;             // Flag indicating the robot is currently turning
-
+bool firstRho = true;             	//!< Flag for accurately determining forward counts after rotating
+bool rotating = true;             	//!< Flag indicating the robot is currently turning
 
 // Pairs
-Pair<int> targetSpeed;            // Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
-Pair<long> counts;                // Left and right encoder readings (counts)
+Pair<int> targetSpeed;            	//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
+Pair<long> counts;                	//!< Left and right encoder readings (counts)
 
+// I2C
+int data = 0;   					//!< Value to store data received over I2C
+bool flagSent = false;            	//!< Indicates if a flag was sent to the Pi
+bool dataReceived = false;        	//!< Indicates if data was read from the Pi
 
 // Functions
 void receiveData(int byteCount);
@@ -252,14 +249,10 @@ void loop() {
 				currentState = TURN_INLINE_TO_PATH;
 			}
 			break;
-
-
 			// TURN_INLINE_TO_PATH State: Turn the robot to be in line with the tape path. Transmit the flag code ROTATE_COMPLETE_SET to the Pi
 			//                            when the robot is done rotating
 		case TURN_INLINE_TO_PATH:
-
 			rotateComplete = drive(angleToEnd, 0);  // Set flag true after robot finishes rotating
-
 			// If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
 			if (flagSent) {
 				flagSent = false;
@@ -362,9 +355,6 @@ Pair<float> computeControllers() {
 	const float KP_RHO = 41.507628, KI_RHO = 0, KD_RHO = 0.000000;      //!< Rho controller constants
 	const float KP_PHI = 260.542014, KI_PHI = 0, KD_PHI = 0.000000;     //!< Phi controller constants
 
-//    const float KP_RHO = 41.507628, KI_RHO = 0.0, KD_RHO = 0.000000;      //!< Rho controller constants
-//    const float KP_PHI = 260.542014, KI_PHI = 0.0, KD_PHI = 0.000000;     //!< Phi controller constants
-
 	if (millis() - startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 
 		// Determine next time to update motorDif and motorSum
@@ -385,6 +375,7 @@ Pair<float> computeControllers() {
 		}
 	}
 
+	// TODO remove these to make the robot faster
 	// If the robot is turning, stop moving forward
 	if (rotating) {
 		motorSum = 0;
@@ -397,7 +388,6 @@ Pair<float> computeControllers() {
 
 
 float controlRho(float current, float desired, const float KP, const float KI, const float KD) {
-	// TODO revert changes that made movement choppy. The camera should help correct the robot
 	float P = 0, D = 0, output = 0;
 
 	// Calculate error
@@ -434,6 +424,7 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	// Calculate total controller output
 	output = P + I_rho + D;
 
+	// TODO this is redundant since setMotors checks the values before it sends them to the motors anyway
 	// Make sure the output is within [-MAX_SPEED, MAX_SPEED]
 	if (output > MAX_SPEED) {
 		output = MAX_SPEED;
@@ -567,7 +558,7 @@ void sendData(){
 	Serial.println("Data Requested");
 
 	// If a write request was received from the Pi
-	switch (currentState) {
+	switch (currentState) { //TODO why arent all of the enumerations here?
 		case FOV_ROTATE:
 		case TURN_TO_START:
 		case TURN_INLINE_TO_PATH:
@@ -589,5 +580,5 @@ void sendData(){
 			}
 			break;
 	}
-	delay(100);
+	delay(100); //TODO remove delay and replace with millis
 } // End sendData
