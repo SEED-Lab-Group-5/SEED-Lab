@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated>
+      <config projectName="David" targetName="Production" />
+      <config projectName="David" targetName="Debug" />
+      <config projectName="David" targetName="Z_DUMMY_TARGET" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="uno" ENABLED="true" CONFIG_NAME="uno" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="6ba10466-64b7-494d-a8d4-d830557555b2" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/David.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/include/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/.arduino-ci.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/.github/ISSUE_TEMPLATE/bug-report-or-feature-request.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/.github/ISSUE_TEMPLATE/config.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/.github/workflows/ci.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/.gitlab-ci.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/DualMC33926MotorShield.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/DualMC33926MotorShield.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/LICENSE.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/examples/Demo/Demo.ino" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/keywords.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/DualMC33926MotorShield/library.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/Encoder.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/Encoder.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/docs/issue_template.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/examples/Basic/Basic.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/examples/NoInterrupts/NoInterrupts.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/examples/SpeedTest/SpeedTest.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/examples/TwoKnobs/TwoKnobs.pde" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/keywords.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/library.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/library.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/utility/direct_pin_read.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/utility/interrupt_config.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/Encoder/utility/interrupt_pins.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/lib/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/platformio.ini" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SeperateControlClion/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SeperateControlClion/.idea/SeperateControlClion.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SeperateControlClion/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SeperateControlClion/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SeperateControlClion/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../SeperateControlClion/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../FSMClion/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../FSMClion/src/main.cpp" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:uno" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2021" />
+    <option name="minorVersion" value="3.4" />
+  </component>
+  <component name="ProjectId" id="27lD5mfTF68T1VLI3mWui3F8v13" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="RunOnceActivity.cidr.known.project.marker" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="cidr.known.project.marker" value="true" />
+    <property name="cmake.loaded.for.project" value="true" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="vue.rearranger.settings.migration" value="true" />
+  </component>
+  <component name="RunManager" selected="PlatformIO.PlatformIO Debug">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Z_DUMMY_TARGET" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="David" TARGET_NAME="Z_DUMMY_TARGET" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="David" RUN_TARGET_NAME="Z_DUMMY_TARGET">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PlatformIO Debug" type="platformio" factoryName="PlatformIO Debug" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="David" TARGET_NAME="Debug" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="David" RUN_TARGET_NAME="Debug">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PlatformIO Upload" type="platformio" factoryName="PlatformIO Upload" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="David" TARGET_NAME="Production" CONFIG_NAME="uno" RUN_TARGET_PROJECT_NAME="David" RUN_TARGET_NAME="Production">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="CMake Application.Z_DUMMY_TARGET" />
+      <item itemvalue="PlatformIO.PlatformIO Debug" />
+      <item itemvalue="PlatformIO.PlatformIO Upload" />
+    </list>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6ba10466-64b7-494d-a8d4-d830557555b2" name="Changes" comment="" />
+      <created>1649885597556</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1649885597556</updated>
+      <workItem from="1649885598810" duration="2574000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

@@ -249,6 +249,7 @@ void loop() {
             if (flagSent) {
                 flagSent = false;   
                 encoderReset();
+				motionComplete = false;
                 currentState = CALC_PATH_ANGLE;            
             }
             break;          
@@ -359,7 +360,7 @@ void getPositions() {
 
 int loopsWithinError = 0;
 
-bool drive(float angle, float forward){
+bool drive(float angle, float forward) {
     Pair<float> controlOutput = {0,0};
     
     
@@ -660,3 +661,5 @@ void sendData(){
     }
     delay(100); //TODO remove delay and replace with millis
 } // End sendData
+
+
