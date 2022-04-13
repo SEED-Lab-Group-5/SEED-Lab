@@ -423,7 +423,7 @@ def waitForRotation():
     while rotateComplete != ROTATE_COMPLETE_SET:        
         rotateComplete = readData()    # Read from the I2C line and see if rotateComplete flag was set and transmitted       
         print("\trotateComplete =", rotateComplete)
-        time.sleep(1)    # Wait 1 second to reduce polling
+        waitTime(1)  # Wait 1 second to reduce polling
         
 # Wait until the motionComplete flag is transmitted from the Arduino (Robot has stopped driving forward)
 def waitForMotion():
@@ -431,7 +431,7 @@ def waitForMotion():
     while motionComplete != MOTION_COMPLETE_SET:        
         motionComplete = readData()    # Read from the I2C line and see if motionComplete flag was set and transmitted       
         print("\tmotionComplete =", motionComplete)
-        time.sleep(1)    # Wait 1 second to reduce polling
+        waitTime(1)    # Wait 1 second to reduce polling
 
 
 

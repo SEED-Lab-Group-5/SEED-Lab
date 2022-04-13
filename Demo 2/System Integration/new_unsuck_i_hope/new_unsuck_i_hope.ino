@@ -1,4 +1,5 @@
-//////////////////////////////////////////////////////////////////////// 
+
+////////////////////////////////////////////////////////////////////////
 // NAME:
 // CLASS:    EENG-350
 // GROUP:    5
@@ -70,7 +71,7 @@ unsigned long currentTime = 0, startTime = 0;           //!< For creating a disc
 
 
 // Flags and transmission codes
-bool rotateComplete = false;      // Indicates if robot is done rotating 
+bool rotateComplete = false;      // Indicates if robot is done rotating
 #define ROTATE_COMPLETE_SET -127  // Transmitted to Pi when flag is set
 
 bool tapeNotFound = false;        // Indicates if tape was not found in the field of view
@@ -79,7 +80,7 @@ bool tapeNotFound = false;        // Indicates if tape was not found in the fiel
 bool motionComplete = false;      // Indicates if robot has stopped moving forward
 #define MOTION_COMPLETE_SET -125  // Transmitted to Pi when flag is set
 
-               
+
 #define START_STATE_MACHINE_SET -124    // Indicates the Pi is ready and the state machine should start
 
 bool flagSent = false;            // Indicates if a flag was sent to the Pi
@@ -114,14 +115,14 @@ DualMC33926MotorShield motors;           //!< Motor 2 is the right wheel
  */
 void setup() {
     // Begin serial communication
-    Serial.begin(9600); // start serial for output
-    
+    Serial.begin(115200); // start serial for output
+
     // Initialize i2c as slave
     Wire.begin(SLAVE_ADDRESS);
 
     // Define callbacks for i2c communication
     Wire.onReceive(receiveData);
-    Wire.onRequest(sendData); 
+    Wire.onRequest(sendData);
     Serial.println("Ready!");
 
     // Get initial values of currentTime and startTime
@@ -140,58 +141,58 @@ void setup() {
 // Finite State Machine //
 //////////////////////////
 static currentState_t currentState = START;      ////////////////////////CHANGED from START to STOP//////////////////////////////////////
-void loop() {   
-    int angleToStart;    // The angle to the start of the line 
+void loop() {
+    int angleToStart;    // The angle to the start of the line
     int distanceToStart; // The distance to the start of the line
     int angleToEnd;      // The angle to the end of the line
     int distanceToEnd;   // The distance to the end of the line
-      
+
     switch (currentState) {
-        
+
         // The START state runs at the start of the program, no code takes place
-        case START:            
+        case START:
             if (dataReceived) {
                 // If the Pi indicated no tape was found in the screen, go back to FOV_ROTATE state
                 if (data == START_STATE_MACHINE_SET) {
-                    // Move to next state          
-                    currentState = FOV_ROTATE;                
+                    // Move to next state
+                    currentState = FOV_ROTATE;
                 }
                 dataReceived = false;   // Reset dataReceived flag
-            }           
+            }
             break;
 
 
-        // FOV_ROTATE State: Rotate the robot clockwise by slightly over half the field of view (30 degrees). The flag
-        //                   rotateComplete will be set to -127 and sent to the Pi when the robot has finished rotating
-        case FOV_ROTATE:            
+            // FOV_ROTATE State: Rotate the robot clockwise by slightly over half the field of view (30 degrees). The flag
+            //                   rotateComplete will be set to -127 and sent to the Pi when the robot has finished rotating
+        case FOV_ROTATE:
             // Set rotateComplete flag true after robot finishes rotating
             rotateComplete = drive(30.0, 0);
-               
+
             // If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
             if (flagSent) {
-                flagSent = false;   
+                flagSent = false;
                 rotateComplete = false;
                 encoderReset();
-                currentState = FIND_TAPE;                         
-            }         
+                currentState = FIND_TAPE;
+            }
             break;
 
 
-        // FIND_TAPE State: Wait for the Pi to find the angle to a line of tape in the camera's FOV and transmit it. The flag value
-        //                  TAPE_NOT_FOUND_SET will be sent by the Pi if no tape is found. Otherwise the value sent will be the angle.
+            // FIND_TAPE State: Wait for the Pi to find the angle to a line of tape in the camera's FOV and transmit it. The flag value
+            //                  TAPE_NOT_FOUND_SET will be sent by the Pi if no tape is found. Otherwise the value sent will be the angle.
         case FIND_TAPE:
             // If the Arduino received data from the Pi
             if (dataReceived) {
                 // If the Pi indicated no tape was found in the screen, go back to FOV_ROTATE state
                 if (data == TAPE_NOT_FOUND_SET) {
-//                    Serial.println("Tape Not Found");
+                    Serial.println("Tape Not Found");
                     currentState = FOV_ROTATE;
-                    
-                // If the Pi indicated that it found tape, store the angle the Arduino received and move to TURN_TO_START state
+
+                    // If the Pi indicated that it found tape, store the angle the Arduino received and move to TURN_TO_START state
                 } else {
                     angleToStart = data;
-//                    Serial.print("angleToStart = ");
-//                    Serial.println(angleToStart);
+                    Serial.print("angleToStart = ");
+                    Serial.println(angleToStart);
                     currentState = TURN_TO_START;
                 }
                 dataReceived = false;   // Reset dataReceived flag
@@ -199,30 +200,30 @@ void loop() {
             break;
 
 
-        // TURN_TO_START State: Rotate the robot to be in line with the start of the tape path. Send the flag code ROTATE_COMPLETE_SET to the Pi
-        //                      when the robot is done rotating
+            // TURN_TO_START State: Rotate the robot to be in line with the start of the tape path. Send the flag code ROTATE_COMPLETE_SET to the Pi
+            //                      when the robot is done rotating
         case TURN_TO_START:
-        
+
             rotateComplete = drive(angleToStart, 0);  // Set flag true after robot finishes rotating
 
             // If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
             if (flagSent) {
-                flagSent = false;  
+                flagSent = false;
                 rotateComplete = false;
                 encoderReset();
-                currentState = CALC_DIST_TO_START;    
+                currentState = CALC_DIST_TO_START;
             }
             break;
 
 
-        // CALC_DIST_TO_START State: The Pi calculates the distance from the robot to the start of the tape path and transmits this value to the Arduino
-        case CALC_DIST_TO_START:        
+            // CALC_DIST_TO_START State: The Pi calculates the distance from the robot to the start of the tape path and transmits this value to the Arduino
+        case CALC_DIST_TO_START:
             // If the Arduino received data from the Pi
             if (dataReceived) {
                 distanceToStart = data;
-//                Serial.print("distanceToStart = ");
-//                Serial.println(distanceToStart);               
-                
+                Serial.print("distanceToStart = ");
+                Serial.println(distanceToStart);
+
                 // Reset flag
                 dataReceived = false;
 
@@ -232,47 +233,47 @@ void loop() {
             break;
 
 
-        // DRIVE_TO_START State: Drive the robot to the start of the tape path. Transmit the flag code MOTION_COMPLETE_SET to the Pi when the robot has
-        //                       finished driving forward.
+            // DRIVE_TO_START State: Drive the robot to the start of the tape path. Transmit the flag code MOTION_COMPLETE_SET to the Pi when the robot has
+            //                       finished driving forward.
         case DRIVE_TO_START:
-        
+
             motionComplete = drive(0, distanceToStart);  // Set flag true after robot finishes moving forward
 
             // If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
             if (flagSent) {
-                flagSent = false;   
+                flagSent = false;
                 encoderReset();
-                currentState = CALC_PATH_ANGLE;            
+                currentState = CALC_PATH_ANGLE;
             }
-            break;          
+            break;
 
 
-        // CALC_PATH_ANGLE State: The Pi calculate the angle the robot needs to turn to to be in line with the tape path. This value is then sent to the Arduino
+            // CALC_PATH_ANGLE State: The Pi calculate the angle the robot needs to turn to to be in line with the tape path. This value is then sent to the Arduino
         case CALC_PATH_ANGLE:
             // If the Arduino received data from the Pi
             if (dataReceived) {
                 angleToEnd = data;
-//                Serial.print("angleToEnd = ");
-//                Serial.println(angleToEnd);
-                
+                Serial.print("angleToEnd = ");
+                Serial.println(angleToEnd);
+
                 // Reset flag
                 dataReceived = false;
-                
+
                 // Move to next state
                 currentState = TURN_INLINE_TO_PATH;
             }
-            break;   
+            break;
 
 
-        // TURN_INLINE_TO_PATH State: Turn the robot to be in line with the tape path. Transmit the flag code ROTATE_COMPLETE_SET to the Pi
-        //                            when the robot is done rotating
+            // TURN_INLINE_TO_PATH State: Turn the robot to be in line with the tape path. Transmit the flag code ROTATE_COMPLETE_SET to the Pi
+            //                            when the robot is done rotating
         case TURN_INLINE_TO_PATH:
-        
+
             rotateComplete = drive(angleToEnd, 0);  // Set flag true after robot finishes rotating
 
             // If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
             if (flagSent) {
-                flagSent = false;   
+                flagSent = false;
                 rotateComplete = false;
                 encoderReset();
                 currentState = CALC_DIST_TO_END;
@@ -280,44 +281,44 @@ void loop() {
             break;
 
 
-        // CALC_DIST_TO_END State: The Pi calculate the distance from the robot to the end of the tape path. This value is then sent to the Arduino
+            // CALC_DIST_TO_END State: The Pi calculate the distance from the robot to the end of the tape path. This value is then sent to the Arduino
         case CALC_DIST_TO_END:
             // If the Arduino received data from the Pi
             if (dataReceived) {
                 distanceToEnd = data;
-//                Serial.print("distanceToEnd = ");
-//                Serial.println(distanceToEnd);
+                Serial.print("distanceToEnd = ");
+                Serial.println(distanceToEnd);
 
                 // Reset flag
                 dataReceived = false;
-                
+
                 // Move to next state
                 currentState = DRIVE_TO_END;
             }
             break;
 
 
-        // DRIVE_TO_END State: Drive to the end of the tape path. Transmit the flag code MOTION_COMPLETE_SET to the Pi when the robot has
-        //                     finished driving forward.
+            // DRIVE_TO_END State: Drive to the end of the tape path. Transmit the flag code MOTION_COMPLETE_SET to the Pi when the robot has
+            //                     finished driving forward.
         case DRIVE_TO_END:
-        
+
             motionComplete = drive(0, distanceToEnd);  // Set flag true after robot finishes moving forward
 
             // If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
             if (flagSent) {
-                flagSent = false;  
+                flagSent = false;
                 encoderReset();
                 currentState = STOP;
             }
             break;
 
 
-        // STOP State: The end of the tape was reached. Exit the state machine
+            // STOP State: The end of the tape was reached. Exit the state machine
         case STOP:
             drive(0,0);
 //            currentState = START;
             break;
-    }   
+    }
 }
 
 
@@ -336,7 +337,7 @@ void encoderReset() {
 void getPositions() {
     // Update encoder counts
     counts = {EncL.read(), -EncR.read()};
-    
+
     // Find current robot positions
     phi = (RADIUS * RAD_CONVERSION * float(counts.L - counts.R)) / BASE;
     rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
@@ -346,28 +347,28 @@ void getPositions() {
 bool drive(float angle, float forward){
     Pair<float> controlOutput = {0,0};
     int loopsWithinError = 0;
-    // Update global controller variables
-    targetPhi = angle;
-    targetRho = forward;
-    
+
     // Loop until error is acceptable, signal that the robot reached the targeted values
     while(loopsWithinError < LOOPS_WITHIN_ERROR_MIN) {
-        
-        
+        // Update global controller variables
+        targetPhi = angle;
+        targetRho = forward;
+
         getPositions();
         controlOutput = computeControllers();
-    
+
         motorDif = controlOutput.L;
         motorSum = controlOutput.R;
-    
+
         // Determine Va,L and Va,R based on motorDif and motorSum
         setMotors(motorDif, motorSum);
 
         if (pastErrorRho < RHO_ERROR_TOLERANCE && pastErrorPhi < PHI_ERROR_TOLERANCE){
-//            Serial.println(pastErrorPhi);
+            Serial.println(pastErrorPhi);
+            
             loopsWithinError++;
         }
-    } 
+    }
     loopsWithinError = 0;
     return true;
 } // End drive
@@ -389,7 +390,7 @@ Pair<float> computeControllers() {
         // Calculate ∆Va (motorDif)
         motorDif = controlPhi(phi, targetPhi * float(PI) / float(180), KP_PHI, KI_PHI, KD_PHI);
         rotating = abs(motorDif) >= 20;
-        
+
         // When the robot finishes rotating, start moving forward
         if (!rotating) {
             if (firstRho) { // When the robot finishes the first rotation, set the initial forward counts
@@ -413,99 +414,68 @@ Pair<float> computeControllers() {
 
 
 float controlRho(float current, float desired, const float KP, const float KI, const float KD) {
-    // TODO revert changes that made movement choppy. The camera should help correct the robot
     float P = 0, D = 0, output = 0;
-    
     // Calculate error
     error = desired - current;
-    
-    // If the error is really small or really big, clear the accumulated I to prevent overshoot
-    if (abs(error) <= 0.001 || abs(error) >= 5) {
-        I_rho = 0;
-    }
-
-    // Give I some help if the error changes sign
-    if (error < 0 && I_rho > 0) {
-        I_rho = 0;
-    }
-    if (error > 0 && I_rho < 0) {
-        I_rho = 0;
-    }
-
     // Calculate P component
     P = KP * error;
-    
     // Calculate I component
-    I_rho += KI * float(CONTROL_SAMPLE_RATE) * error;
-
+    I_rho += KI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
     // Calculate D component
     if (currentTime > 0) {
         D = (error - pastErrorRho) / float(CONTROL_SAMPLE_RATE / 1000.0);
         pastErrorRho = error;
         D *= KD;
-    } else {
-        D = 0;
-    }
-
+    } else D = 0;
     // Calculate total controller output
     output = P + I_rho + D;
-
     // Make sure the output is within [-MAX_SPEED, MAX_SPEED]
-    if (output > MAX_SPEED) {
-        output = MAX_SPEED;
-    }
-    if (output < -MAX_SPEED) {
-        output = -MAX_SPEED;
-    }
+    if(output > MAX_SPEED) output = MAX_SPEED;
+    if(output < -MAX_SPEED) output = -MAX_SPEED;
+
+    // Make sure the output is large enough if the error is significant enough.
+    // The magnitude of each motor speed must be greater than ~40 for it to turn
+    if(error > 0.5 && output < 80) output = 80;
+    if(error < -0.5 && output > -80) output = -80;
+
+    // Return the updated motorSum
     return output;
 } // End controlRho
 
 
 float controlPhi(float current, float desired, const float KP, const float KI, const float KD) {
+
     float P = 0, D = 0, output = 0;
-    
+
     // Calculate error
     error = desired - current;
-    
+
     // Calculate P component
     P = KP * error;
-    
-    // If the error is really small or really big, clear the accumulated I to prevent overshoot
-    if (abs(error) <= 0.001) {
-        I_phi = 0;
-    }
-
-    // Give I some help if the error changes sign
-    if (error < 0 && I_phi > 0) {
-        I_phi = 0;
-    }
-    if (error > 0 && I_phi < 0) {
-        I_phi = 0;
-    }
-    
 
     // Calculate I component
-    I_phi += KI * float(CONTROL_SAMPLE_RATE) * error;
+    I_phi += KI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
 
     // Calculate D component
     if (currentTime > 0) {
         D = (error - pastErrorPhi) / float(CONTROL_SAMPLE_RATE / 1000.0);
         pastErrorPhi = error;
         D *= KD;
-    } else {
-        D = 0;
-    }
+    } else D = 0;
 
     // Calculate total controller output
     output = P + I_phi + D;
 
     // Make sure the output is within [-MAX_SPEED, MAX_SPEED]
-    if (output > MAX_SPEED) {
-        output = MAX_SPEED;
-    }
-    if (output < -MAX_SPEED) {
-        output = -MAX_SPEED;
-    }
+    if(output > MAX_SPEED) output = MAX_SPEED;
+    if(output < -MAX_SPEED) output = -MAX_SPEED;
+
+    // Make sure the output is large enough. Each motor speed must be greater than ~40 for the motor to move
+    if(error > 0.1 && output < 80) output = 80;
+    if(error < -0.1 && output > -80) output = -80;
+
+
+    // Return the updated motorDif
     return output;
 } // End controlPhi
 
@@ -521,14 +491,14 @@ void setMotors(float dif, float sum) {
     target.R = (sum - dif) / float(2.0);
     target.L = (sum + dif) / float(2.0);
 
-//    // TODO verify this works as intended. if not, remove it.
-//    // Average Difference (L-R): 2.487932
-//    if (target.L < 0) {
-//        target.L += 2.487932;
-//    }
-//    if (target.L > 0) {
-//        target.L -= 2.487932;
-//    }
+    // TODO verify this works as intended. if not, remove it.
+    // Average Difference (L-R): 2.487932
+    if (target.L < 0) {
+        target.L += 2.487932;
+    }
+    if (target.L > 0) {
+        target.L -= 2.487932;
+    }
 
     // Make sure the new speeds are within [-MAX_SPEED, MAX_SPEED]
     if (target.R > MAX_SPEED) {
@@ -561,15 +531,15 @@ void setMotors(float dif, float sum) {
 void receiveData(int byteCount){
     dataReceived = true;                // Indicate that the Arduino received data from the Pi
     Serial.println("Data Received");
-  
+
     // While there are still bytes to read, read them and store the most recent to number
     while(Wire.available()) {
-        data = Wire.read();   
-        
+        data = Wire.read();
+
         // Convert to Two's compliment representation
         if (data > 127) {
             data = 256 - data;
-            data *= -1; 
+            data *= -1;
         }
         Serial.print("Data: ");
         Serial.println(data);
@@ -579,7 +549,7 @@ void receiveData(int byteCount){
 
 // callback for sending data
 void sendData(){
-   
+
     Serial.println("Data Requested");
 
     // If a write request was received from the Pi
@@ -593,9 +563,9 @@ void sendData(){
                 flagSent = true;
                 Serial.println("Rotate FLAG Sent");
             }
-            break;     
-            
-        case DRIVE_TO_START: 
+            break;
+
+        case DRIVE_TO_START:
         case DRIVE_TO_END:
             // Wait until robot has finished driving forward
             if (motionComplete) {
@@ -603,7 +573,7 @@ void sendData(){
                 flagSent = true;
                 Serial.println("motion FLAG Sent");
             }
-            break; 
+            break;
     }
     delay(100);
 } // End sendData
