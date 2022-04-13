@@ -24,9 +24,6 @@
 // Define data types needed for finite state machine
 typedef enum {START, FOV_ROTATE, FIND_TAPE, TURN_TO_START, CALC_DIST_TO_START, DRIVE_TO_START, CALC_PATH_ANGLE, TURN_INLINE_TO_PATH, CALC_DIST_TO_END, DRIVE_TO_END, STOP} currentState_t;
 
-int data = 0;   // Value to store data received over I2C
-
-
 template<typename T>
 struct Pair {
     T L;
@@ -49,9 +46,9 @@ const float BASE = 13.8;                                //!< Distance between ce
 const float RAD_CONVERSION = float(2.0 * PI) / CPR;     //!< Scalar to convert counts to radians
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 const int MAX_SPEED = 400;                              //!< Maximum scaled PWM (max motor speed = 400)
-const int MIN_SPEED = 84;                               //!< Minimum scaled PWM
-const int RHO_ERROR_TOLERANCE = 2;                      //!< Maximum allowable error in Rho for robot to be considered at its target Rho value
-const int PHI_ERROR_TOLERANCE = 3;                      //!< Maximum allowable error in Phi for robot to be considered at its target Phi value
+const Pair<float> MIN_SPEED = {41.879180,40.635212};             //!< Minimum scaled PWM //TODO implement this
+const int RHO_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Rho for robot to be considered at its target Rho value
+const int PHI_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Phi for robot to be considered at its target Phi value
 const int LOOPS_WITHIN_ERROR_MIN = 400;                 //!< Minimum number of loops through the drive function where error was within tolerance before motion is considered complete
 #define ENC_R_WHITE 2                                   //!< Right motor encoder output B (white wire)
 #define ENC_R_YELLOW 5                                  //!< Right motor encoder output A (yellow wire)
@@ -70,30 +67,32 @@ unsigned long currentTime = 0, startTime = 0;           //!< For creating a disc
 
 
 // Flags and transmission codes
-bool rotateComplete = false;      // Indicates if robot is done rotating 
-#define ROTATE_COMPLETE_SET -127  // Transmitted to Pi when flag is set
+bool rotateComplete = false;      	//!< Indicates if robot is done rotating
+#define ROTATE_COMPLETE_SET (-127)  //!< Transmitted to Pi when flag is set
 
-bool tapeNotFound = false;        // Indicates if tape was not found in the field of view
-#define TAPE_NOT_FOUND_SET -126   // Transmitted from Pi when flag is set
+bool tapeNotFound = false;        	//!< Indicates if tape was not found in the field of view
+#define TAPE_NOT_FOUND_SET (-126)   //!< Transmitted from Pi when flag is set
 
-bool motionComplete = false;      // Indicates if robot has stopped moving forward
-#define MOTION_COMPLETE_SET -125  // Transmitted to Pi when flag is set
+bool motionComplete = false;      	//!< Indicates if robot has stopped moving forward
+#define MOTION_COMPLETE_SET (-125)  //!< Transmitted to Pi when flag is set
+#define START_STATE_MACHINE_SET (-124)    //!< Indicates the Pi is ready and the state machine should start
 
-               
-#define START_STATE_MACHINE_SET -124    // Indicates the Pi is ready and the state machine should start
 
-bool flagSent = false;            // Indicates if a flag was sent to the Pi
-bool dataReceived = false;        // Indicates if data was read from the Pi
-bool firstRho = true;             // Flag for accurately determining forward counts after rotating
-bool rotating = true;             // Flag indicating the robot is currently turning
-
+bool firstRho = true;             	//!< Flag for accurately determining forward counts after rotating
+bool rotating = true;             	//!< Flag indicating the robot is currently turning
 
 // Pairs
-Pair<int> targetSpeed;            // Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
-Pair<long> counts;                // Left and right encoder readings (counts)
+Pair<int> targetSpeed;            	//!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
+Pair<long> counts;                	//!< Left and right encoder readings (counts)
 
+// I2C
+int data = 0;   					//!< Value to store data received over I2C
+bool flagSent = false;            	//!< Indicates if a flag was sent to the Pi
+bool dataReceived = false;        	//!< Indicates if data was read from the Pi
 
 // Functions
+void receiveData(int byteCount);
+void sendData();
 void getPositions();
 bool drive(float angle, float forward);
 Pair<float> computeControllers();
@@ -113,71 +112,69 @@ DualMC33926MotorShield motors;           //!< Motor 2 is the right wheel
  * Does initial setup
  */
 void setup() {
-    // Begin serial communication
-    Serial.begin(9600); // start serial for output
-    
-    // Initialize i2c as slave
-    Wire.begin(SLAVE_ADDRESS);
+	// Begin serial communication
+	Serial.begin(9600); // start serial for output
 
-    // Define callbacks for i2c communication
-    Wire.onReceive(receiveData);
-    Wire.onRequest(sendData); 
-    Serial.println("Ready!");
+	// Initialize i2c as slave
+	Wire.begin(SLAVE_ADDRESS);
 
-    // Get initial values of currentTime and startTime
-    currentTime = millis();
-    startTime = millis();
+	// Define callbacks for i2c communication
+	Wire.onReceive(receiveData);
+	Wire.onRequest(sendData);
+	Serial.println("Ready!");
 
-    // Initialize the motor object
-    motors.init();
+	// Get initial values of currentTime and startTime
+	currentTime = millis();
+	startTime = millis();
 
-    // Set left and right motor speeds to 0
-    motors.setSpeeds(0, 0);
+	// Initialize the motor object
+	motors.init();
+
+	// Set left and right motor speeds to 0
+	motors.setSpeeds(0, 0);
 }
-
-
 
 
 //////////////////////////
 // Finite State Machine //
 //////////////////////////
-int angleToStart    = TAPE_NOT_FOUND_SET;   // The angle to the start of the line 
+int angleToStart    = TAPE_NOT_FOUND_SET;   // The angle to the start of the line
 int distanceToStart = TAPE_NOT_FOUND_SET;   // The distance to the start of the line
 int angleToEnd      = TAPE_NOT_FOUND_SET;   // The angle to the end of the line
 int distanceToEnd   = TAPE_NOT_FOUND_SET;   // The distance to the end of the line
-    
+
 static currentState_t currentState = START;
-void loop() {   
-    
-      
+void loop() {
+
+
     switch (currentState) {
-        
+
         // The START state runs at the start of the program, no code takes place
-        case START:            
+        case START:
             if (dataReceived) {
                 // If the Pi indicated no tape was found in the screen, go back to FOV_ROTATE state
                 if (data == START_STATE_MACHINE_SET) {
-                    // Move to next state          
-                    currentState = FOV_ROTATE;                
+                    // Move to next state
+                    currentState = FOV_ROTATE;
                 }
                 dataReceived = false;   // Reset dataReceived flag
-            }           
+            }
             break;
 
 
         // FOV_ROTATE State: Rotate the robot clockwise by slightly over half the field of view (30 degrees). The flag
         //                   rotateComplete will be set to -127 and sent to the Pi when the robot has finished rotating
-        case FOV_ROTATE:            
+        case FOV_ROTATE:
             // Set rotateComplete flag true after robot finishes rotating
             rotateComplete = drive(30.0, 0);
-               
+
             // If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
             if (flagSent) {
-                flagSent = false;   
+                flagSent = false;
                 rotateComplete = false;
                 encoderReset();
-                currentState = FIND_TAPE;                         
-            }         
+                currentState = FIND_TAPE;
+            }
             break;
 
 
@@ -409,63 +406,64 @@ Pair<float> computeControllers() {
         }
     }
 
-    // If the robot is turning, stop moving forward
-    if (rotating) {
-        motorSum = 0;
-    }
-    else {
-        motorDif = 0;
-    }
-    return {motorDif, motorSum};
+	// TODO remove these to make the robot faster
+	// If the robot is turning, stop moving forward
+//	if (rotating) {
+//		motorSum = 0;
+//	}
+//	else {
+//		motorDif = 0;
+//	}
+	return {motorDif, motorSum};
 } // End computeControllers
 
 
 float controlRho(float current, float desired, const float KP, const float KI, const float KD) {
-    // TODO revert changes that made movement choppy. The camera should help correct the robot
-    float P = 0, D = 0, output = 0;
-    
-    // Calculate error
-    error = desired - current;
-    
-    // If the error is really small or really big, clear the accumulated I to prevent overshoot
-    if (abs(error) <= 0.001 || abs(error) >= 5) {
-        I_rho = 0;
-    }
+	float P = 0, D = 0, output = 0;
 
-    // Give I some help if the error changes sign
-    if (error < 0 && I_rho > 0) {
-        I_rho = 0;
-    }
-    if (error > 0 && I_rho < 0) {
-        I_rho = 0;
-    }
+	// Calculate error
+	error = desired - current;
 
-    // Calculate P component
-    P = KP * error;
-    
-    // Calculate I component
-    I_rho += KI * float(CONTROL_SAMPLE_RATE) * error;
+	// If the error is really small or really big, clear the accumulated I to prevent overshoot
+	if (abs(error) <= 0.001 || abs(error) >= 5) {
+		I_rho = 0;
+	}
 
-    // Calculate D component
-    if (currentTime > 0) {
-        D = (error - pastErrorRho) / float(CONTROL_SAMPLE_RATE / 1000.0);
-        pastErrorRho = error;
-        D *= KD;
-    } else {
-        D = 0;
-    }
+	// Give I some help if the error changes sign
+	if (error < 0 && I_rho > 0) {
+		I_rho = 0;
+	}
+	if (error > 0 && I_rho < 0) {
+		I_rho = 0;
+	}
 
-    // Calculate total controller output
-    output = P + I_rho + D;
+	// Calculate P component
+	P = KP * error;
 
-    // Make sure the output is within [-MAX_SPEED, MAX_SPEED]
-    if (output > MAX_SPEED) {
-        output = MAX_SPEED;
-    }
-    if (output < -MAX_SPEED) {
-        output = -MAX_SPEED;
-    }
-    return output;
+	// Calculate I component
+	I_rho += KI * float(CONTROL_SAMPLE_RATE) * error;
+
+	// Calculate D component
+	if (currentTime > 0) {
+		D = (error - pastErrorRho) / float(CONTROL_SAMPLE_RATE / 1000.0);
+		pastErrorRho = error;
+		D *= KD;
+	} else {
+		D = 0;
+	}
+
+	// Calculate total controller output
+	output = P + I_rho + D;
+
+	// TODO this is redundant since setMotors checks the values before it sends them to the motors anyway
+	// Make sure the output is within [-MAX_SPEED, MAX_SPEED]
+	if (output > MAX_SPEED) {
+		output = MAX_SPEED;
+	}
+	if (output < -MAX_SPEED) {
+		output = -MAX_SPEED;
+	}
+	return output;
 } // End controlRho
 
 
@@ -590,28 +588,28 @@ void sendData(){
    
 //    Serial.println("Data Requested");
 
-    // If a write request was received from the Pi
-    switch (currentState) {
-        case FOV_ROTATE:
-        case TURN_TO_START:
-        case TURN_INLINE_TO_PATH:
-            // Wait until robot has finished rotating
-            if (rotateComplete) {
-                Wire.write(ROTATE_COMPLETE_SET);
-                flagSent = true;
-//                Serial.println("Rotate FLAG Sent");
-            }
-            break;     
-            
-        case DRIVE_TO_START: 
-        case DRIVE_TO_END:
-            // Wait until robot has finished driving forward
-            if (motionComplete) {
-                Wire.write(MOTION_COMPLETE_SET);
-                flagSent = true;
-//                Serial.println("motion FLAG Sent");
-            }
-            break; 
-    }
-    delay(100);
+	// If a write request was received from the Pi
+	switch (currentState) { //TODO why arent all of the enumerations here?
+		case FOV_ROTATE:
+		case TURN_TO_START:
+		case TURN_INLINE_TO_PATH:
+			// Wait until robot has finished rotating
+			if (rotateComplete) {
+				Wire.write(ROTATE_COMPLETE_SET);
+				flagSent = true;
+				Serial.println("Rotate FLAG Sent");
+			}
+			break;
+
+		case DRIVE_TO_START:
+		case DRIVE_TO_END:
+			// Wait until robot has finished driving forward
+			if (motionComplete) {
+				Wire.write(MOTION_COMPLETE_SET);
+				flagSent = true;
+				Serial.println("motion FLAG Sent");
+			}
+			break;
+	}
+	delay(100); //TODO remove delay and replace with millis
 } // End sendData
