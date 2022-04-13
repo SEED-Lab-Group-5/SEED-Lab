@@ -29,11 +29,9 @@ def rad(deg):#quick finction to convert rads to degrees
 def deg(rad):#quick finction to convert degrees to rads
     return (rad * 180) / math.pi
 
-# for RPI version 1, use "bus = smbus.SMBus(0)"
-bus = smbus.SMBus(1)
-
-# This is the address we setup in the Arduino Program
-address = 0x04
+# Set serial address and baud rate
+ser = serial.Serial('/dev/ttyACM0', 9600)
+time.sleep(3)   # Wait a moment to finalize the connection
 
 # Flags and transmission codes
 rotateComplete = False            # Indicates if robot is done rotating 
@@ -423,16 +421,17 @@ def state_stop():
 
 
 def readData():
-    data = bus.read_byte(address)
-    if (data > 127):
-        data = 256 - data
-        data *= -1
+    # While there are still bytes to be read from the buffer
+    while (ser.in_waiting > 0):
+        # Read line from buffer and decode using utf-8 
+        data = ser.readline().decode('utf-8').rstrip()
     return data
 
 
 def writeData(value):
-    bus.write_byte(address, value)
+    ser.write(value.encode())
     return -1
+
 
 
 # Wait until the rotationComplete flag is transmitted from the Arduino (Robot has stopped rotating)
