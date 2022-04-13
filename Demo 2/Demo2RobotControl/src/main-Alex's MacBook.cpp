@@ -12,6 +12,8 @@
 // PURPOSE:  What the resource was used for
 //////////////////////////////////////////////////////////////////////
 
+
+
 #include "DualMC33926MotorShield.h"
 #include "Encoder.h"
 #include "Arduino.h"
@@ -62,7 +64,7 @@ float rho = 0, targetRho = 0;        //!< current and target distances in inches
 float phi = 0, targetPhi = 0;        //!< current and target angles in radians
 float rhoOffset = 0;            	//!< Contains initial forward counts after rotating
 float motorDif, motorSum;        	//!< Parameters for speed control. motorDif [-400,400] and motorSum [-400, 400]
-float error, pastErrorRho = 0, pastErrorPhi = 0;        	//!< Variables used in calculating control output
+float errorPhi, pastErrorRho = 0, pastErrorPhi = 0;        	//!< Variables used in calculating control output
 float I_rho = 0, I_phi = 0;                                	//!< Integral controller accumulations
 unsigned long currentTime = 0, startTime = 0;           	//!< For creating a discrete time controller
 
@@ -120,6 +122,8 @@ void initialize() {
 	// Set left and right motor speeds to 0
 	motors.setSpeeds(0, 0);
 }
+
+
 
 // TODO remove loop
 void setup() {
@@ -201,7 +205,7 @@ void scanForTape() {
 	}
 }
 
-bool drive(float angle, float forward) {
+bool drive(float angle, float forward){
     targetPhi = angle;
     targetRho = forward;
     if(encReset){ ////TODO must be set to true in FSM before calling drive function
@@ -210,15 +214,15 @@ bool drive(float angle, float forward) {
     encReset = false;
 
     computeControllers();
-    if (error < 1){
+    if (errorPhi < 1){
         return false;
     }
 }
 
 Pair<float> computeControllers() {
 	// Controller Parameters
-	const float KP_RHO = 41.507628, KI_RHO = 0, KD_RHO = 0.000000;    	//!< Rho controller constants
-	const float KP_PHI = 260.542014, KI_PHI = 0, KD_PHI = 0.000000;    	//!< Phi controller constants
+	const float KP_RHO = 41.507628, KI_RHO = 2, KD_RHO = 0.000000;    	//!< Rho controller constants
+	const float KP_PHI = 260.542014, KI_PHI = 5, KD_PHI = 0.000000;    	//!< Phi controller constants
 
 	if (millis() - startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 
@@ -251,23 +255,23 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	// TODO revert changes that made movement choppy. The camera should help correct the robot
 	float P = 0, D = 0, output = 0;
 	// Calculate error
-	error = desired - current;
+	errorPhi = desired - current;
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
-	if (abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
+	if (abs(errorPhi) <= 0.001 || abs(errorPhi) >= 5) I_rho = 0;
 
 	// Give I some help if the error changes sign
-	if (error < 0 && I_rho > 0) I_rho = 0;
-	if (error > 0 && I_rho < 0) I_rho = 0;
+	if (errorPhi < 0 && I_rho > 0) I_rho = 0;
+	if (errorPhi > 0 && I_rho < 0) I_rho = 0;
 
 	// Calculate P component
-	P = KP * error;
+	P = KP * errorPhi;
 	// Calculate I component
-	I_rho += KI * float(CONTROL_SAMPLE_RATE) * error;
+	I_rho += KI * float(CONTROL_SAMPLE_RATE) * errorPhi;
 
 	// Calculate D component
 	if (currentTime > 0) {
-		D = (error - pastErrorRho) / float(CONTROL_SAMPLE_RATE / 1000.0);
-		pastErrorRho = error;
+		D = (errorPhi - pastErrorRho) / float(CONTROL_SAMPLE_RATE / 1000.0);
+		pastErrorRho = errorPhi;
 		D *= KD;
 	} else D = 0;
 
@@ -284,28 +288,29 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 float controlPhi(float current, float desired, const float KP, const float KI, const float KD) {
 	float P = 0, D = 0, output = 0;
 	// Calculate error
-	error = desired - current;
+	errorPhi = desired - current;
 	// Calculate P component
-	P = KP * error;
+	P = KP * errorPhi;
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
-	if (abs(error) <= 0.001) I_phi = 0;
+	if (abs(errorPhi) <= 0.001) I_phi = 0;
 
 	// Give I some help if the error changes sign
-	if (error < 0 && I_phi > 0) I_phi = 0;
-	if (error > 0 && I_phi < 0) I_phi = 0;
+	if (errorPhi < 0 && I_phi > 0) I_phi = 0;
+	if (errorPhi > 0 && I_phi < 0) I_phi = 0;
 
 	// Calculate I component
-	I_phi += KI * float(CONTROL_SAMPLE_RATE) * error;
+	I_phi += KI * float(CONTROL_SAMPLE_RATE) * errorPhi;
 
 	// Calculate D component
 	if (currentTime > 0) {
-		D = (error - pastErrorPhi) / float(CONTROL_SAMPLE_RATE / 1000.0);
-		pastErrorPhi = error;
+		D = (errorPhi - pastErrorPhi) / float(CONTROL_SAMPLE_RATE / 1000.0);
+		pastErrorPhi = errorPhi;
 		D *= KD;
 	} else D = 0;
 
 	// Calculate total controller output
 	output = P + I_phi + D;
+
 	// Make sure the output is within [-MAX_SPEED, MAX_SPEED]
 	if (output > MAX_SPEED) output = MAX_SPEED;
 	if (output < -MAX_SPEED) output = -MAX_SPEED;
