@@ -46,7 +46,7 @@ const float BASE = 13.8;                                //!< Distance between ce
 const float RAD_CONVERSION = float(2.0 * PI) / CPR;     //!< Scalar to convert counts to radians
 const long CONTROL_SAMPLE_RATE = 5;                     //!< Controller sample rate in ms
 const int MAX_SPEED = 400;                              //!< Maximum scaled PWM (max motor speed = 400)
-const Pair<int> MIN_SPEED = {80,84};             //!< Minimum scaled PWM //TODO implement this
+const Pair<float> MIN_SPEED = {41.879180,40.635212};             //!< Minimum scaled PWM //TODO implement this
 const int RHO_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Rho for robot to be considered at its target Rho value
 const int PHI_ERROR_TOLERANCE = 5;                      //!< Maximum allowable error in Phi for robot to be considered at its target Phi value
 const int LOOPS_WITHIN_ERROR_MIN = 400;                 //!< Minimum number of loops through the drive function where error was within tolerance before motion is considered complete
@@ -458,7 +458,6 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 		I_phi = 0;
 	}
 
-
 	// Calculate I component
 	I_phi += KI * float(CONTROL_SAMPLE_RATE) * error;
 
@@ -518,6 +517,8 @@ void setMotors(float dif, float sum) {
 	if (target.L < -MAX_SPEED) {
 		target.L = -MAX_SPEED;
 	}
+
+	// If the robot needs to move and the outputs are too low, make them the minimum speed
 
 	// Update the global targetSpeed variable
 	// TODO can we remove this?
