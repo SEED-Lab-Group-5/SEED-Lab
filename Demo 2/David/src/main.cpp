@@ -116,13 +116,6 @@ void setup() {
 	// Begin serial communication
 	Serial.begin(9600); // start serial for output
 
-	// Initialize i2c as slave
-	Wire.begin(SLAVE_ADDRESS);
-
-	// Define callbacks for i2c communication
-	Wire.onReceive(receiveData);
-	Wire.onRequest(sendData);
-
 	// Get initial values of currentTime and startTime
 	currentTime = millis();
 	startTime = millis();

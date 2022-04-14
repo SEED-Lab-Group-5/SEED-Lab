@@ -13,6 +13,18 @@
 // PURPOSE:  What the resource was used for
 //////////////////////////////////////////////////////////////////////
 
+
+/*
+ * TODO
+ * make a drive function that takes an angle and distance, drives until the error is small enough, then stop and return true
+ * called once (loop inside drive)
+ * Reset encoders after
+ * Set motors to 0
+ * Clear globals
+ *
+ *
+ */
+
 #include "DualMC33926MotorShield.h"
 #include "Encoder.h"
 #include "Arduino.h"
