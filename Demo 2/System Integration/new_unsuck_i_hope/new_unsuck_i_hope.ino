@@ -49,7 +49,7 @@ const int MAX_SPEED = 400;                              //!< Maximum scaled PWM 
 const Pair<float> MIN_SPEED = {81.879180,80.635212};    //!< Minimum scaled PWM //TODO implement this
 const float RHO_ERROR_TOLERANCE = 0.5;                  //!< Maximum allowable error in Rho for robot to be considered at its target Rho value
 const float PHI_ERROR_TOLERANCE = 1*(PI/180.0);         //!< Maximum allowable error in Phi for robot to be considered at its target  value
-const int LOOPS_WITHIN_ERROR_MIN = 400;                  //!< Minimum number of loops through the drive function where error was within tolerance before motion is considered complete
+const int LOOPS_WITHIN_ERROR_MIN = 40;                  //!< Minimum number of loops through the drive function where error was within tolerance before motion is considered complete
 #define ENC_R_WHITE 2                                   //!< Right motor encoder output B (white wire)
 #define ENC_R_YELLOW 5                                  //!< Right motor encoder output A (yellow wire)
 #define ENC_L_WHITE 3                                   //!< Left motor encoder output B (white wire)
@@ -249,6 +249,7 @@ void loop() {
             if (flagSent) {
                 flagSent = false;   
                 encoderReset();
+                motionComplete = false;
                 currentState = CALC_PATH_ANGLE;            
             }
             break;          
@@ -315,6 +316,7 @@ void loop() {
             // If the Arduino finished sending data to the Pi, reset the flag and encoders and move to the next state
             if (flagSent) {
                 flagSent = false;  
+                motionComplete = false;
                 encoderReset();
                 currentState = STOP;
             }
@@ -366,6 +368,7 @@ bool drive(float angle, float forward){
     // Update global controller variables
     targetPhi = angle;
     targetRho = forward;
+//    Serial.println(targetRho);
     int MAX_MOTOR_DIF = 20;
     int MAX_MOTOR_SUM = 40;
 //    motorDif = MAX_MOTOR_DIF;
@@ -385,13 +388,13 @@ bool drive(float angle, float forward){
         setMotors(motorDif, motorSum);
 
         if (abs(pastErrorRho) < RHO_ERROR_TOLERANCE && abs(pastErrorPhi) < PHI_ERROR_TOLERANCE){
-            if(abs(targetRho) > 0) {
-                Serial.println(pastErrorRho);
-            }
-            if(abs(targetPhi) > 0) {
-                Serial.print("P");
-                Serial.println(pastErrorPhi);
-            }
+//            if(abs(targetRho) > 0) {
+//                Serial.println(pastErrorRho);
+//            }
+//            if(abs(targetPhi) > 0) {
+//                Serial.print("P");
+//                Serial.println(pastErrorPhi);
+//            }
             loopsWithinError++;
         }
 //    } 
@@ -400,8 +403,8 @@ bool drive(float angle, float forward){
 //    return true;
     if (loopsWithinError == LOOPS_WITHIN_ERROR_MIN) {
         loopsWithinError = 0;
-        targetRho = rho;
-        targetPhi = phi;
+        targetRho = 0;
+        targetPhi = 0;
         return true;
     }
     else {
