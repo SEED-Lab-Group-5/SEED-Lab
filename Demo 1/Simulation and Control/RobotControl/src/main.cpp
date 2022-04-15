@@ -10,7 +10,7 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
 // TARGETS
-float rho = 0, targetRho = 6; 		//!< current and target distances in inches
+float rho = 0, targetRho = 0; 		//!< current and target distances in inches
 float phi = 0, targetPhi = 360; 	//!< current and target angles in radians
 
 // Instead of creating dedicated left and right variables, I made a Pair type that has a left and right element
@@ -62,7 +62,7 @@ float controlPhi(float current, float desired, float KP, float KI, float KD);
 // Numeric Constants and Conversions
 const float CPR = 50.0*64.0;							//!< Total encoder counts per revolution (CPR) of motor shaft = 3200 counts/rot
 const float RADIUS = 2.9375;              		//!< Measured radius of wheels in inches
-const float BASE = 13.8;                 			//!< Distance between center of wheels in inches
+const float BASE = 13.65; // WAS 13.8                 			//!< Distance between center of wheels in inches
 const float RAD_CONVERSION = float(2.0*PI)/CPR;			//!< Scalar to convert counts to radians
 const int MAX_SPEED = 400;   							//!< Maximum scaled PWM (max motor speed = 400)
 const int MIN_SPEED = 84;								//!< Minimum scaled PWM
@@ -128,7 +128,7 @@ void loop() {
 		// Calculate ∆Va
 		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180),KP_PHI,KI_PHI,KD_PHI);
 
-		rotating = abs(motorDif) >= 70;
+		rotating = abs(motorDif) >= 20;
 		if(rotating) Serial.print("Rotating\t");
 
 		/*
@@ -163,17 +163,21 @@ float controlRho(float current, float desired, const float KP, const float KI, c
 	// Calculate error
 	error = desired - current;
 
-	// If the error is really small or really big, clear the accumulated I to prevent overshoot
-	if(abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
-
 	// Give I some help if the error changes sign
 	if(error < 0 && I_rho > 0) I_rho = 0;
 	if(error > 0 && I_rho < 0) I_rho = 0;
 
+	// If the error is really small or really big, clear the accumulated I to prevent overshoot
+	if(abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0;
+
+	// TODO this is new:
+	else if(error >= 0.1 && I_rho < MIN_SPEED) I_rho = MIN_SPEED;
+	else if(error <= -0.1 && I_rho > -MIN_SPEED) I_rho = -MIN_SPEED;
+
 	// Calculate P component
 	P = KP * error;
 	// Calculate I component
-	I_rho += KI * float(CONTROL_SAMPLE_RATE*0.001) * error;
+	I_rho += KI * float(CONTROL_SAMPLE_RATE*0.01) * error; // I needs to accumulate faster when it needs to correct itself
 
 	// Calculate D component
 	if (currentTime > 0) {
@@ -215,15 +219,20 @@ float controlPhi(float current, float desired, const float KP, const float KI, c
 	// Calculate P component
 	P = KP * error;
 
+	// TODO made some changes to the thresholds since 0.1 radians is significant
 	// If the error is really small or really big, clear the accumulated I to prevent overshoot
-	if(abs(error) <= 0.001) I_phi = 0;
+	if(abs(error) <= 0.0001 || abs(error) >= 15*PI/180) I_phi = 0;
+
+	// TODO this is new:
+	else if(error >= 0.05 && I_phi < MIN_SPEED) I_phi = MIN_SPEED;
+	else if(error <= -0.05 && I_phi > -MIN_SPEED) I_phi = -MIN_SPEED;
 
 	// Give I some help if the error changes sign
 	if(error < 0 && I_phi > 0) I_phi = 0;
 	if(error > 0 && I_phi < 0) I_phi = 0;
 
 	// Calculate I component
-	I_phi += KI * float(CONTROL_SAMPLE_RATE*0.001) * error;
+	I_phi += KI * float(CONTROL_SAMPLE_RATE*0.01) * error;
 
 	// Calculate D component
 	if (currentTime > 0) {
@@ -262,8 +271,8 @@ void setMotorValues(float dif, float sum) {
 	target.R = (sum - dif) / float(2.0);
 	target.L = (sum + dif) / float(2.0);
 	// TODO should I offset the targets?
-	if(target.L < 0) target.L -= 1.58884;
-	if(target.L > 0) target.L += 1.58884;
+//	if(target.L < 0) target.L -= 1.58884;
+//	if(target.L > 0) target.L += 1.58884;
 
 	// Make sure the new speeds are within [-MAX_SPEED, MAX_SPEED]
 	if(target.R > MAX_SPEED) target.R = MAX_SPEED;
