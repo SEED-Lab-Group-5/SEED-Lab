@@ -90,8 +90,6 @@ void Control::startControl() {
 	currentTime = millis();
 	startTime = millis();
 
-
-
 	// Set left and right motor speeds to 0
 	motors.setSpeeds(0, 0);
 
@@ -121,8 +119,6 @@ void Control::getPositions() {
 	// Find current robot positions
 	phi = (RADIUS * RAD_CONVERSION * float(counts.L - counts.R)) / BASE;
 	rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
-
-
 }
 
 float Control::controlRho(float current, float desired) {
