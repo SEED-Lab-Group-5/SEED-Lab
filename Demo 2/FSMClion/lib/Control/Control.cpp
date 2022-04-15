@@ -6,7 +6,7 @@
 #include "DualMC33926MotorShield.h"
 #include "Encoder.h"
 #include "Arduino.h"
-
+#define ENCODER_OPTIMIZE_INTERRUPTS
 
 #define ENC_R_WHITE 2                                   //!< Right motor encoder output B (white wire)
 #define ENC_R_YELLOW 5                                  //!< Right motor encoder output A (yellow wire)
@@ -14,50 +14,39 @@
 #define ENC_L_YELLOW 6                                  //!< Left motor encoder output A (yellow wire)
 
 
-
-template<typename T>
-struct Pair {
-	T L;
-	T R;
-	Pair operator+(const T &a) const { return Pair<T>({T(L) + a, T(R) + a}); };
-	Pair operator+(const Pair<T> &a) const { return Pair<T>({T(L) + a.L, T(R) + a.R}); };
-	Pair operator-(const T &a) const { return Pair<T>({T(L) - a, T(R) - a}); };
-	Pair operator-(const Pair<T> &a) const { return Pair<T>({T(L) - a.L, T(R) - a.R}); };
-	Pair operator*(const T &a) const { return Pair<T>({T(L) * a, T(R) * a}); };
-	Pair operator*(const Pair<T> &a) const { return Pair<T>({T(L) * a.L, T(R) * a.R}); };
-	Pair operator/(const T &a) const { return Pair<T>({T(L) / a, T(R) / a}); };
-	Pair operator/(const Pair<T> &a) const { return Pair<T>({T(L) / a.L, T(R) / a.R}); };
-};
-
 const Pair<float> MIN_SPEED = {81.879180,80.635212};    //!< Minimum scaled PWM //TODO implement this
 // Pairs
 Pair<int> targetSpeed;              //!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
-Pair<long> counts;                  //!< Left and right encoder readings (counts)
+Pair<long> counts, pastCounts;                  //!< Left and right encoder readings (counts)
 
 Encoder EncR(ENC_R_WHITE, ENC_R_YELLOW); //!< Right motor encoder
 Encoder EncL(ENC_L_WHITE, ENC_L_YELLOW); //!< Left motor encoder
 DualMC33926MotorShield motors;           //!< Motor 2 is the right wheel
 
-Control::Control() = default;
+Control::Control(){
+	// Initialize the motor object
+	motors.init();
+}
 
 bool Control::drive(float targetPhi, float targetRho) {
 	// Instead of running forever or waiting for the error to hit zero and cutting it off,
 	// I'll use millis() and a local variable to keep track of how long the motors are off
 	// That way it wont go forever or get cut off too fast
 
-
+	// Setup once
+	startControl();
 
 	// Update encoder counts
 	counts = {EncL.read(), -EncR.read()};
 	// Find current robot positions
-	phi = (RADIUS*RAD_CONVERSION*float(counts.L - counts.R))/WHEELBASE;
+	phi = (RADIUS*RAD_CONVERSION*float(counts.L - counts.R))/BASE;
 	rho = RADIUS*RAD_CONVERSION*float(counts.L + counts.R)*float(0.5); // Circumference = 2*PI*r
 	// Update motorDif and motorSum with control() every CONTROL_SAMPLE_RATE ms
 	if (millis()-startTime >= currentTime + CONTROL_SAMPLE_RATE) {
 		// Adjust elapsed time
 		currentTime += CONTROL_SAMPLE_RATE;
 		// Calculate ∆Va
-		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180),KP_PHI,KI_PHI,KD_PHI);
+		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180));
 		// only start moving forward when done turning
 		if(abs(motorDif) < 20) {
 			if(firstRho) { // to mitigate the initial encoder readings from turning
@@ -65,35 +54,43 @@ bool Control::drive(float targetPhi, float targetRho) {
 				firstRho = false;
 			}
 			// Calculate Va
-			motorSum = controlRho(rho-rhoOffset,targetRho,KP_RHO,KI_RHO,KD_RHO);
+			motorSum = controlRho(rho-rhoOffset,targetRho);
 		}
 	}
 	// Determine target motor speeds based on motorDif and motorSum using setMotorValues()
-	setMotorValues(motorDif,motorSum);
+	setMotors(motorDif,motorSum);
 	// Set the motors to the new speeds
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 
-	/*
- * TODO
- * make a drive function that takes an angle and distance,
-	 * drives until the error is small enough,
-	 * then stops
-	 * and return true
- * called once (loop inside drive)
- * Reset encoders after
- * Set motors to 0
- * Clear globals
- */
+	if(isDone()) {
+		stopControl(); // Clean up locals
+		return true;
+	}
+
 	return false;
 }
 
 
 void Control::startControl() {
+	// Guard clause
+	if(driveStarted) return;
+	else driveStarted = true;
+
+	// Reset flags
+	firstRho = true;
+
+	// Reset driving variables
+	rhoOffset = 0;
+	motorDif = 0;
+	motorSum = 0;
+	error = 0, pastErrorRho = 0, pastErrorPhi = 0;
+	I_rho = 0, I_phi = 0;
+
+	// Save current time
 	currentTime = millis();
 	startTime = millis();
 
-	// Initialize the motor object
-	motors.init();
+
 
 	// Set left and right motor speeds to 0
 	motors.setSpeeds(0, 0);
@@ -104,10 +101,6 @@ void Control::startControl() {
  * Reset controller when finished
  */
 void Control::stopControl() {
-
-	// Clear variables
-
-	// Stop motors
 
 	// Reset encoders
 	EncR.readAndReset();
@@ -128,9 +121,9 @@ void Control::getPositions() {
 	// Find current robot positions
 	phi = (RADIUS * RAD_CONVERSION * float(counts.L - counts.R)) / BASE;
 	rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
+
+
 }
-
-
 
 float Control::controlRho(float current, float desired) {
 
@@ -223,5 +216,29 @@ void Control::setMotors(float diff, float sum) const {
 
 	// Update the targetSpeed variable
 	targetSpeed = {int(target.L),int(target.R)};
+}
+
+bool Control::isDone() {
+	bool done = false;
+	// If the errors are low enough for long enough, return true
+
+	// if current position is the same as the previous position
+
+	// Every MIN_SETTLING_TIME milliseconds
+	if (millis()-startTime >= lastTime + MIN_SETTLING_TIME) {
+
+		lastTime += MIN_SETTLING_TIME;
+
+		// If the encoders haven't changed
+		if(counts.L == pastCounts.L && counts.R == pastCounts.R) {
+			// The robot is done moving, or isn't moving fast enough for us to wait.
+			done = true;
+		}
+
+		// Save position
+		pastCounts = counts;
+	}
+
+	return done;
 }
 

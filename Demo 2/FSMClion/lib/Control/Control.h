@@ -6,6 +6,20 @@
 #define Control_h
 #include "Arduino.h"
 
+template<typename T>
+struct Pair {
+	T L;
+	T R;
+	Pair operator+(const T &a) const { return Pair<T>({T(L) + a, T(R) + a}); };
+	Pair operator+(const Pair<T> &a) const { return Pair<T>({T(L) + a.L, T(R) + a.R}); };
+	Pair operator-(const T &a) const { return Pair<T>({T(L) - a, T(R) - a}); };
+	Pair operator-(const Pair<T> &a) const { return Pair<T>({T(L) - a.L, T(R) - a.R}); };
+	Pair operator*(const T &a) const { return Pair<T>({T(L) * a, T(R) * a}); };
+	Pair operator*(const Pair<T> &a) const { return Pair<T>({T(L) * a.L, T(R) * a.R}); };
+	Pair operator/(const T &a) const { return Pair<T>({T(L) / a, T(R) / a}); };
+	Pair operator/(const Pair<T> &a) const { return Pair<T>({T(L) / a.L, T(R) / a.R}); };
+};
+
 class Control {
 public:
 	//Default constructor
@@ -25,12 +39,14 @@ public:
 
 	// public methods
 	void startControl(); //!< setup
-	bool drive(float targetPhi, float targetRho); //!< basically acts as loop()
-
-	//
-	void getPositions();
-
 	static void stopControl();
+	bool drive(float targetPhi, float targetRho);
+
+	// Status
+	bool isDone();
+
+	// helpers
+	void getPositions();
 	void setMotors(float diff, float sum) const;
 
 private:
@@ -40,8 +56,11 @@ private:
 	float motorDif = 0, motorSum = 0;                               //!< Parameters for speed control. motorDif [-400,400] and motorSum [-400, 400]
 	float error = 0, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
 	float I_rho = 0, I_phi = 0;                             //!< Integral controller accumulations
-	unsigned long currentTime = 0, startTime = 0;           //!< For creating a discrete time controller
+	unsigned long currentTime = 0, startTime = 0, lastTime = 0;           //!< For creating a discrete time controller
+	unsigned long MIN_SETTLING_TIME = 2000;					//!< Time in ms to wait for motors to settle // TODO adjust this if needed
 	bool firstRho = true;               //!< Flag for accurately determining forward counts after rotating
+	bool driveStarted = false;			//!< Set to true when startControl() is called for the first time
+
 
 	float controlRho(float current, float desired);
 	float controlPhi(float current, float desired);

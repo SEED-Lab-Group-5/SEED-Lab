@@ -21,25 +21,11 @@
 #include "Arduino.h"
 #include <Wire.h>
 
-#define ENCODER_OPTIMIZE_INTERRUPTS
+
 #define SLAVE_ADDRESS 0x04
 
 // Define data types needed for finite state machine
 typedef enum {START, FOV_ROTATE, FIND_TAPE, TURN_TO_START, CALC_DIST_TO_START, DRIVE_TO_START, CALC_PATH_ANGLE, TURN_INLINE_TO_PATH, CALC_DIST_TO_END, DRIVE_TO_END, STOP} currentState_t;
-
-template<typename T>
-struct Pair {
-    T L;
-    T R;
-    Pair operator+(const T &a) const { return Pair<T>({T(L) + a, T(R) + a}); };
-    Pair operator+(const Pair<T> &a) const { return Pair<T>({T(L) + a.L, T(R) + a.R}); };
-    Pair operator-(const T &a) const { return Pair<T>({T(L) - a, T(R) - a}); };
-    Pair operator-(const Pair<T> &a) const { return Pair<T>({T(L) - a.L, T(R) - a.R}); };
-    Pair operator*(const T &a) const { return Pair<T>({T(L) * a, T(R) * a}); };
-    Pair operator*(const Pair<T> &a) const { return Pair<T>({T(L) * a.L, T(R) * a.R}); };
-    Pair operator/(const T &a) const { return Pair<T>({T(L) / a, T(R) / a}); };
-    Pair operator/(const Pair<T> &a) const { return Pair<T>({T(L) / a.L, T(R) / a.R}); };
-};
 
 // Flags and transmission codes // TODO too many flags for movement.
 bool rotateComplete = false;          //!< Indicates if robot is done rotating
@@ -81,9 +67,6 @@ void setup() {
 	control.startControl();
 
 }
-
-
-
 //////////////////////////
 // Finite State Machine //
 //////////////////////////
@@ -281,9 +264,6 @@ void loop() {
     }   
 }
 
-
-
-
 /**
  * Callback for received data (From mini project)
  * @param byteCount
@@ -306,7 +286,6 @@ void receiveData(int byteCount){
 //        Serial.println(data);
     }
 } // End receiveData
-
 
 // callback for sending data
 void sendData(){
@@ -350,5 +329,3 @@ void sendData(){
 	}
     delay(100); //TODO remove delay and replace with millis
 } // End sendData
-
-

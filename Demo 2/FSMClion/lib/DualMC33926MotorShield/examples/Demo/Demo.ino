@@ -15,7 +15,7 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("Dual MC33926 Motor Shield");
-  md.init();
+	md.startControl();
 }
 
 void loop()
