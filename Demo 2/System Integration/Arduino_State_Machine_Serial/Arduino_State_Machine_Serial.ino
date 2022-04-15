@@ -27,7 +27,6 @@ typedef enum {START, DRIVE, WAIT, SEND_STATUS} currentState_t;
 // Flags and transmission codes
 bool motionComplete = false;        //!< Indicates if robot has stopped moving/rotating
 #define MOTION_COMPLETE_SET (-127)  //!< Transmitted to Pi when flag is set
-
 #define START_STATE_MACHINE_SET (-126)    //!< Indicates the Pi is ready and the state machine should start
 #define MOTION_TYPE_ROTATE (-125)
 #define MOTION_TYPE_FORWARD (-124)
@@ -52,6 +51,7 @@ void setup() {
     // Get initial values of currentTime and startTime
     control.startControl();
 
+    pinMode(13, OUTPUT);
 }
 
 //////////////////////////
@@ -66,7 +66,7 @@ void loop() {
         case START:
             if (dataReceived) {
                 // If the Pi indicated no tape was found in the screen, go back to FOV_ROTATE state
-                if (data == START_STATE_MACHINE_SET) {
+                if (motionType == START_STATE_MACHINE_SET) {
                     // Move to next state
                     currentState = WAIT;
                 }
@@ -76,6 +76,7 @@ void loop() {
             
         // WAIT State: Wait until data is recieved from Pi
         case WAIT:
+//            digitalWrite(13, HIGH);
             if (dataReceived) {
                 currentState = DRIVE;
                 dataReceived = false;
@@ -85,12 +86,13 @@ void loop() {
 
         // DRIVE State: Rotate the robot by a given angle or drive forward a given distance motionComplete 
         //              will be set to -127 and sent to the Pi when the robot has moving
-        case DRIVE:
+        case DRIVE:   
+            digitalWrite(13, HIGH);         
             if (motionType == MOTION_TYPE_ROTATE) {
-                motionComplete = controller.drive(motionMagnitude, 0.0);
+                motionComplete = control.drive(motionMagnitude, 0.0);
             }
             else if (motionType == MOTION_TYPE_FORWARD) {
-                motionComplete = controller.drive(0.0, motionMagnitude);
+                motionComplete = control.drive(0.0, motionMagnitude);
             }
             if (motionComplete) {
                 currentState = SEND_STATUS;
@@ -108,7 +110,7 @@ void loop() {
 void serialEvent(){
     if (Serial.available() > 0) {
         motionType = Serial.readStringUntil('\n').toInt();
-        motionMagnitude = = Serial.readStringUntil('\n').toInt();
+        motionMagnitude = Serial.readStringUntil('\n').toInt();
         dataReceived = true;    // Flag to indicate if a serial read operation has occured
     }
     // Wait until buffer is empty
