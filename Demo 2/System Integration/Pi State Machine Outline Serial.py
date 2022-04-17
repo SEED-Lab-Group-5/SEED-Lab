@@ -30,17 +30,16 @@ def deg(rad):#quick finction to convert degrees to rads
 
 
 # Set serial address and baud rate
-ser = serial.Serial('/dev/ttyACM0', 19200)
-time.sleep(3)   # Wait a moment to finalize the connection
+ser = serial.Serial('/dev/ttyACM0', 9600)
+time.sleep(1)   # Wait a moment to finalize the connection
 
 # Flags and transmission codes
 
-MOTION_COMPLETE_SET = -1000  # Transmitted from Arduino when flag is set
-START_STATE_MACHINE_SET = -2000
-
-MOTION_TYPE_ROTATE = -3000
-MOTION_TYPE_FORWARD = -4000
-TAPE_NOT_FOUND_SET = -5000
+MOTION_COMPLETE_SET = -127  # Transmitted from Arduino when flag is set
+START_STATE_MACHINE_SET = -126
+MOTION_TYPE_ROTATE = -125
+MOTION_TYPE_FORWARD = -124
+TAPE_NOT_FOUND_SET = -123
 
 motionComplete = False        # Indicates if robot is done rotating 
 tapeFound = False             # Indicates if tape was found in the field of view
@@ -295,7 +294,12 @@ def readData():
     # While there are still bytes to be read from the buffer
     while (ser.in_waiting > 0):
         # Read line from buffer and decode using utf-8 
-        data = (ser.readline().decode('utf-8'))
+        data = ser.readline().decode('utf-8').rstrip('\n')
+        try:
+            data = int(data)
+        except:
+            data = 0
+        
         print(data);
 #    ser.reset_input_buffer()
     return data
@@ -303,10 +307,9 @@ def readData():
 
 def writeData(motionType, motionMagnitude):
 #    
-    ser.write((str(motionType)+"\t"+str(motionMagnitude)).encode('utf-8'))
+    ser.write((str(motionType)+" "+str(motionMagnitude)+'\n').encode('utf-8'))
     ser.reset_output_buffer()
-#    ser.write(str(motionMagnitude).encode('utf-8'))
-    time.sleep(2)
+#    time.sleep(2)
     return -1
 
 
@@ -316,7 +319,6 @@ def waitForMotion():
     while motionComplete != MOTION_COMPLETE_SET:
         if ser.in_waiting > 0:
             motionComplete = readData()    # Read from the Serial line and see if motionComplete flag was set and transmitted       
-#            print("MC:", motionComplete) 
 
 
 #################################################################
@@ -336,7 +338,7 @@ def state_FOV_rotate():
     print("state_FOV_rotate")
     writeData(MOTION_TYPE_ROTATE, 30)
     waitForMotion()    
-    return state_turn_to_start    # Move to next state    
+    return state_turn_to_start    # Move to next state
 
 
 # Rotate the robot to be in line with the start of the tape path
@@ -402,10 +404,10 @@ def state_turn_inline_to_path():
 # Calculate the distance from the robot to the end of the tape path
 def state_drive_to_end():
       
-    print("state_calc_dist_to_end")     
+    print("state_drive_to_end")     
 
     distToEnd = 36  # NOTE: Placeholder  
-    distToEnd = measure_line(currentImg)
+#    distToEnd = measure_line(currentImg)
     
     if distToEnd == TAPE_NOT_FOUND_SET:
         return state_drive_to_end
@@ -419,6 +421,7 @@ def state_drive_to_end():
 
 # The end of the tape was reached. Exit the state machine
 def state_stop():
+    ser.close()
     return None
 
 
