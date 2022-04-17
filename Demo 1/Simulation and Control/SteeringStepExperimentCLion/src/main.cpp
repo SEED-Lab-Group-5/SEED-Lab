@@ -289,8 +289,6 @@ void loop() {
 			oldTime = millis();
 
 		}
-
-
 		// After 2s, turn off the motors and tell Matlab the experiment is done.
 		if(millis()-start2 > 5000 && run2) {
 			run2 = false;
@@ -332,6 +330,7 @@ void setMotorValues(float commandDifference, float commandSum) {
 void serialEvent() {
 	while (Serial.available()) {
 		char inChar = (char)Serial.read(); // get the new byte:
+		float test = (int)Serial.read();
 		InputString += inChar; // add it to the inputString:
 		// if the incoming character is a newline, set commandReceived = true
 		// so the main loop can do something about it.

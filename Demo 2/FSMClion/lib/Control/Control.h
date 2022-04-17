@@ -61,7 +61,6 @@ private:
 	bool firstRho = true;               //!< Flag for accurately determining forward counts after rotating
 	bool driveStarted = false;			//!< Set to true when startControl() is called for the first time
 
-
 	float controlRho(float current, float desired);
 	float controlPhi(float current, float desired);
 
