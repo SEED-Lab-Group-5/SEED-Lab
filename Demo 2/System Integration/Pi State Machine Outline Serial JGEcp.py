@@ -47,7 +47,7 @@ atStart = False               # Indicates if robot has stopped moving forward
 startStateMachine = False
 
 
-MIN_CONSECUTIVE_SAME_ANGLE_COUNT = 5    # Number of concurrent angle readings that must be same before returning tape angle
+MIN_CONSECUTIVE_SAME_ANGLE_COUNT = 1    # Number of concurrent angle readings that must be same before returning tape angle
 
 
 currentImg = None
@@ -64,7 +64,7 @@ perspectiveRows = rows
 perspectiveCols = cols
 cameraToWheelOffsetIn=abs(cameraHeightIn/math.tan(verticalFOV/2))#distance form the camera's closest viewto the wheels
 resizecols=abs(2*cameraToWheelOffsetIn*math.tan(horizontalFOV/2))#physical viewing with at the corners of the camera
-showImg=False#decides if the frame is shown on the screen or not
+showImg=True#decides if the frame is shown on the screen or not
 
 
 def waitTime(secondsToWait):
@@ -105,17 +105,25 @@ def perspectiveShift(shapeImg):
 
 #takes a picture
 def take_picture():
-    camera = PiCamera(resolution=(cols, rows), framerate=30)
-    rawCapture = PiRGBArray(camera)
-    # allow the camera to warmup
-    time.sleep(0.1)
-    # grab an image from the camera
-    print("Capturing")
-    try:
-        camera.capture(rawCapture, format="bgr")
-        return rawCapture.array
-    except:
-        print("Failed")
+    ret, img = cap.read()
+    if not ret:
+        print("I broke")
+        return None
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    imghsv = cv.cvtColor(img, cv.COLOR_RGB2HSV)
+    lower = np.array([blueHSV-deltaHSV,50,50])
+    upper = np.array([blueHSV+deltaHSV,255,255])
+    mask = cv.inRange(imghsv, lower, upper)
+    kernel = np.ones((5,5),np.uint8)#create kernel
+    mask = cv.erode(mask,kernel,iterations=2)#dialate to fill in gap
+    mask = cv.blur(mask,(5,5))#blur to smooth
+    mask = cv.blur(mask,(5,5))#blur to smooth
+    waitTime(0.7)
+    if showImg:        
+        cv.imshow('frame', mask)
+    if cv.waitKey(1) == ord('q'):
+        return None
+    return mask #set a global variable for functions to reference 
 
 
 #halfs the image size for processing (may not use)
@@ -129,8 +137,9 @@ def size_down(img):
 
 
 #outputs a mask of the bird's eye view 
-def birds_eye_(mask):
-    #resize for quicker processing  
+def birds_eye_():
+    #resize for quicker processing
+    mask = take_picture()
     imgtuple = (cols,rows)
     mask = cv.resize(mask, imgtuple)
 
@@ -154,13 +163,14 @@ def birds_eye_(mask):
 
 
 #locates and points to a tape that may be outside of the screen
-def measure_angle(img):
+def measure_angle():
     consecutiveSameAngleCount = 0
     prevTapeAngle = TAPE_NOT_FOUND_SET
     
     # Wait until tape angle reported is the same for MIN_CONSECUTIVE_SAME_ANGLE_COUNT consecutive loops before returning angle
     while (consecutiveSameAngleCount < MIN_CONSECUTIVE_SAME_ANGLE_COUNT):
-        mask = wide_angle_(img)
+        mask = wide_angle_()
+#        cv.imshow('frame',mask)
         #--------------------------------------\/Image Measurment\/--------------------------------------
         nonzero = np.nonzero(mask)
         if len(nonzero[0])==0:
@@ -186,9 +196,9 @@ def measure_angle(img):
 
 
 #will return the length of a line the robot is aligned with and at the base of
-def measure_line(img):
+def measure_line():
 #    waitTime(1)
-    mask = birds_eye_(img)
+    mask = birds_eye_()
     
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
@@ -210,10 +220,10 @@ def measure_line(img):
 
 
 #will return the distance to the start of a line the robot is aligned with
-def measure_distance_to_start(img):
+def measure_distance_to_start():
 #    waitTime(1)
-    mask = birds_eye_(img)
-    
+    mask = birds_eye_()
+#    cv.imshow('frame',mask)
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
@@ -234,9 +244,10 @@ def measure_distance_to_start(img):
  
  
 #returns a masked wide view for angle measurment
-def wide_angle_(mask):
+def wide_angle_():
     
-    #resize for quicker processing  
+    #resize for quicker processing
+    mask = take_picture()
     imgtuple = (cols,rows)
     mask = cv.resize(mask, imgtuple)
 
@@ -259,9 +270,9 @@ def wide_angle_(mask):
 
 
 #returns the angle to the lowest point of blue tape in the image
-def measure_angle_to_start(img):
+def measure_angle_to_start():
 #    waitTime(1)
-    mask = wide_angle_(img)
+    mask = wide_angle_()
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
@@ -343,7 +354,7 @@ def state_turn_to_start():
     print("state_turn_to_start")
     
     # Use the camera to measure the angle to the tape
-    tapeAngle = measure_angle(currentImg)
+    tapeAngle = measure_angle()
 #    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
 #    tapeAngle = 10                     # NOTE: Placeholder - Use to test if tape WAS found
     
@@ -363,7 +374,7 @@ def state_drive_to_start():
     print("state_drive_to_start()") 
 
 #    distToStart = 24  # NOTE: Placeholder   
-    distToStart = measure_distance_to_start(currentImg)
+    distToStart = measure_distance_to_start()
     
     
     if distToStart == TAPE_NOT_FOUND_SET:
@@ -385,7 +396,7 @@ def state_turn_inline_to_path():
     
     # Use the camera to measure the angle to the tape
 #    angleToEnd = 6  # NOTE: Placeholder
-    angleToEnd = measure_angle(currentImg)
+    angleToEnd = measure_angle()
 
     if angleToEnd == TAPE_NOT_FOUND_SET:
         print("\tTape Not Found")
@@ -404,7 +415,7 @@ def state_drive_to_end():
     print("state_drive_to_end")     
 
 #    distToEnd = 36  # NOTE: Placeholder  
-    distToEnd = measure_line(currentImg)
+    distToEnd = measure_line()
     
     if distToEnd == TAPE_NOT_FOUND_SET:
         return state_drive_to_end
@@ -437,34 +448,21 @@ if not cap.isOpened():
 # The Finite state Loop
 while state is not None: # Run until state is None   
     # Capture frame-by-frame
-    ret, img = cap.read()
-    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-    imghsv = cv.cvtColor(img, cv.COLOR_RGB2HSV)
-    lower = np.array([blueHSV-deltaHSV,50,50])
-    upper = np.array([blueHSV+deltaHSV,255,255])
-    mask = cv.inRange(imghsv, lower, upper)
-    kernel = np.ones((5,5),np.uint8)#create kernel
-    mask = cv.erode(mask,kernel,iterations=3)#dialate to fill in gap
-    mask = cv.blur(mask,(5,5))#blur to smooth
-    mask = cv.blur(mask,(5,5))#blur to smooth
-    currentImg = mask #set a global variable for functions to reference 
+    
     # if frame is read correctly ret is True
-    if not ret:
-#        print("Can't receive frame (stream end?). Exiting ...")
-        break
+    #currentImg = take_picture()
     
     # Our operations on the frame come here
+    #waitTime(0.5)
     #--------------------------------------\/Finite State\/--------------------------------------
+    waitTime(0.4)
     new_state = state() # launch state machine
     state = new_state # update the next state
         
     #--------------------------------------/\Finite State/\--------------------------------------    
     
     # Display the resulting frame
-    if showImg:        
-        cv.imshow('frame', currentImg)
-    if cv.waitKey(1) == ord('q'):
-        break
+    
     
 print("Done with state machine")
 # When everything done, release the capture
@@ -496,4 +494,5 @@ cv.destroyAllWindows()
 #        cv.imshow('frame', currentImg)
 #    if cv.waitKey(1) == ord('q'):
 #        break
+
 

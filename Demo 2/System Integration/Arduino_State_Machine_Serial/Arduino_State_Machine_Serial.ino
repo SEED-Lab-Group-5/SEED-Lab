@@ -49,10 +49,7 @@ void setup() {
     // Get initial values of currentTime and startTime
     control.startControl();
 
-    pinMode(LED_BUILTIN, OUTPUT);
-    dumpData();
-    
-     
+    dumpData(); 
 }
 
 //////////////////////////
@@ -61,12 +58,10 @@ void setup() {
 
 static currentState_t currentState = WAIT;
 void loop() {
-//    control.drive(30, 0);
     switch (currentState) {        
             
         // WAIT State: Wait until data is recieved from Pi
         case WAIT:
-//            digitalWrite(LED_BUILTIN, LOW);
             motionComplete = false;
             if (dataReceived) {
                 currentState = DRIVE;
@@ -81,37 +76,21 @@ void loop() {
             if (motionType == MOTION_TYPE_ROTATE) {
                 digitalWrite(LED_BUILTIN, HIGH);
                 motionComplete = control.drive(motionMagnitude, 0);
-//                control.drive(motionMagnitude, 0);
-//while(!control.drive(motionMagnitude, 0));
-//motionComplete = true;
             }
             else if (motionType == MOTION_TYPE_FORWARD) {
                 motionComplete = control.drive(0, motionMagnitude);
-//while(!control.drive(0, motionMagnitude));
-//motionComplete = true;
             }  
             if (motionComplete) {   
                 motionComplete = false;
                 currentState = SEND_STATUS;              
-            }
-//            delay(100);
-         
+            }    
             break;
 
         // SEND_STATUS State: Tell the Pi that motion is complete
         case SEND_STATUS:
             writeData(MOTION_COMPLETE_SET);            
             currentState = WAIT;
-//            currentState = SEND_STATUS;
     } 
-//    if (!motionComplete) { 
-//        if (motionType == MOTION_TYPE_ROTATE) {
-//            motionComplete = control.drive(magnitude,0);
-//        }
-//        else if (motionType == MOTION_TYPE_FORWARD) {
-//            motionComplete = control.drive(0, magnitude);
-//        }      
-//    }
 }
 
 void dumpData() {
