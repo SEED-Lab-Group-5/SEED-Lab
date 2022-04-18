@@ -57,7 +57,7 @@ private:
 	float error = 0, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
 	float I_rho = 0, I_phi = 0;                             //!< Integral controller accumulations
 	unsigned long currentTime = 0, startTime = 0, lastTime = 0;           //!< For creating a discrete time controller
-	unsigned long MIN_SETTLING_TIME = 2000;					//!< Time in ms to wait for motors to settle // TODO adjust this if needed
+	unsigned long MIN_SETTLING_TIME = 1000;					//!< Time in ms to wait for motors to settle // TODO adjust this if needed
 	bool firstRho = true;               //!< Flag for accurately determining forward counts after rotating
 	bool driveStarted = false;			//!< Set to true when startControl() is called for the first time
 

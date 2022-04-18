@@ -24,17 +24,20 @@ typedef enum {START, DRIVE, WAIT, SEND_STATUS} currentState_t;
 
 // Flags and transmission codes
 bool motionComplete = false;        //!< Indicates if robot has stopped moving/rotating
-#define MOTION_COMPLETE_SET (-127)  //!< Transmitted to Pi when flag is set
-#define START_STATE_MACHINE_SET (-126)    //!< Indicates the Pi is ready and the state machine should start
-#define MOTION_TYPE_ROTATE (-125)
-#define MOTION_TYPE_FORWARD (-124)
+int  MOTION_COMPLETE_SET = -127;    //!< Transmitted to Pi when flag is set
+int START_STATE_MACHINE_SET = -126; //!< Indicates the Pi is ready and the state machine should start
+int MOTION_TYPE_ROTATE = -125;
+int MOTION_TYPE_FORWARD = -124;
 
 // Serial
 String dataString;                  //!< Value to store data received over serial
 bool dataReceived = false;          //!< Indicates if data was read from the Pi
 int motionType = MOTION_TYPE_ROTATE;
 int motionMagnitude = 0;
+int magnitude = 0;
 
+void dumpData();
+void writeData(int dataToWrite);
 
 // Object
 Control control; //!< magic
@@ -49,32 +52,20 @@ void setup() {
 	// Get initial values of currentTime and startTime
 	control.startControl();
 
-	pinMode(13, OUTPUT);
+	dumpData();
 }
 
 //////////////////////////
 // Finite State Machine //
 //////////////////////////
 
-static currentState_t currentState = START;
+static currentState_t currentState = WAIT;
 void loop() {
 	switch (currentState) {
 
-		// The START state runs at the start of the program, no code takes place
-		case START:
-			if (dataReceived) {
-				// If the Pi indicated no tape was found in the screen, go back to FOV_ROTATE state
-				if (motionType == START_STATE_MACHINE_SET) {
-					// Move to next state
-					currentState = WAIT;
-				}
-				dataReceived = false;   // Reset dataReceived flag
-			}
-			break;
-
-			// WAIT State: Wait until data is recieved from Pi
+		// WAIT State: Wait until data is recieved from Pi
 		case WAIT:
-//            digitalWrite(13, HIGH);
+			motionComplete = false;
 			if (dataReceived) {
 				currentState = DRIVE;
 				dataReceived = false;
@@ -85,30 +76,44 @@ void loop() {
 			// DRIVE State: Rotate the robot by a given angle or drive forward a given distance motionComplete
 			//              will be set to -127 and sent to the Pi when the robot has moving
 		case DRIVE:
-			digitalWrite(13, HIGH);
 			if (motionType == MOTION_TYPE_ROTATE) {
-				motionComplete = control.drive(motionMagnitude, 0.0);
+				digitalWrite(LED_BUILTIN, HIGH);
+				motionComplete = control.drive(motionMagnitude, 0);
 			}
 			else if (motionType == MOTION_TYPE_FORWARD) {
-				motionComplete = control.drive(0.0, motionMagnitude);
+				motionComplete = control.drive(0, motionMagnitude);
 			}
 			if (motionComplete) {
+				motionComplete = false;
 				currentState = SEND_STATUS;
 			}
 			break;
 
-
 			// SEND_STATUS State: Tell the Pi that motion is complete
 		case SEND_STATUS:
-			Serial.println(MOTION_COMPLETE_SET);
+			writeData(MOTION_COMPLETE_SET);
 			currentState = WAIT;
 	}
 }
 
+void dumpData() {
+	String dataDumpster = "";
+	while (Serial.available() > 0) {
+		dataDumpster = Serial.read();
+	}
+}
+
+
+void writeData(int dataToWrite) {
+	dumpData();
+	Serial.print(String(dataToWrite) + "\n");
+}
+
 void serialEvent(){
 	if (Serial.available() > 0) {
-		motionType = Serial.readStringUntil('\n').toInt();
+		motionType = Serial.readStringUntil(' ').toInt();
 		motionMagnitude = Serial.readStringUntil('\n').toInt();
+
 		dataReceived = true;    // Flag to indicate if a serial read operation has occured
 	}
 	// Wait until buffer is empty
