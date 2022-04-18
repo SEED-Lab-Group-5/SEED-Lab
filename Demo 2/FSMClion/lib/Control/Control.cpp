@@ -129,6 +129,11 @@ float Control::controlRho(float current, float desired) {
 	// Calculate P component
 	P = KP_RHO * error;
 	// Calculate I component
+	// Give I some help if the error changes sign
+	if(error < 0 && I_rho > 0) I_rho = 0; //!< NEW
+	if(error > 0 && I_rho < 0) I_rho = 0; //!< NEW
+	if(abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0; //!< NEW
+
 	I_rho += KI_RHO * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
 	// Calculate D component
 	if (currentTime > 0) {
@@ -166,7 +171,13 @@ float Control::controlPhi(float current, float desired) {
 	error = desired - current;
 	// Calculate P component
 	P = KP_PHI * error;
+
 	// Calculate I component
+	// Give I some help if the error changes sign
+	if(error < 0 && I_phi > 0) I_phi = 0; //!< NEW
+	if(error > 0 && I_phi < 0) I_phi = 0; //!< NEW
+	if(abs(error) <= 0.0001 || abs(error) >= 15*PI/180) I_phi = 0; //!< NEW
+
 	I_phi += KI_PHI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
 	// Calculate D component
 	if (currentTime > 0) {
