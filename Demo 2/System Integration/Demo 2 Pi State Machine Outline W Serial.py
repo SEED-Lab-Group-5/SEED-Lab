@@ -33,7 +33,7 @@ def deg(rad):#quick finction to convert degrees to rads
 
 # Set serial address and baud rate
 ser = serial.Serial('/dev/ttyACM0', 9600)
-time.sleep(1)   # Wait a moment to finalize the connection
+time.sleep(1.5)   # Wait a moment to finalize the connection
 
 # Flags and transmission codes
 
@@ -54,23 +54,23 @@ MIN_CONSECUTIVE_SAME_ANGLE_COUNT = 1    # Number of concurrent angle readings th
 
 currentImg = None
 dispImg = None
-blueHSV = 103#100 or 95 depending on type of tape
-deltaHSV = 7
+blueHSV = 105#100 or 95 depending on type of tape
+deltaHSV = 10
 cols = int(672)
 rows = int(496)
 horizontalFOV=rad(55.5)#FOV
-verticalFOV=rad(45)#FOV
-cameraHeightIn=6#height of camera from ground
-desiredPerspectiveRangeIn=48
+verticalFOV=rad(42)#FOV
+cameraHeightIn=6.7#height of camera from ground
+desiredPerspectiveRangeIn=72
 perspectiveRows = rows
 perspectiveCols = cols
 cameraToWheelOffsetIn=abs(cameraHeightIn/math.tan(verticalFOV/2))#distance form the camera's closest viewto the wheels
 resizecols=abs(2*cameraToWheelOffsetIn*math.tan(horizontalFOV/2))#physical viewing with at the corners of the camera
-showImg=False#decides if the frame is shown on the screen or not
+showImg=False #decides if the frame is shown on the screen or not
 camera = PiCamera(resolution=(cols, rows), framerate=30)
 
 
-def saveImg(name,img):
+def showImgThenCrash(name,img):
     if (showImg):
         cv.imshow(name,img)
         cv.waitKey(0)
@@ -90,7 +90,7 @@ def perspectiveShift(shapeImg):
     #print("resizing...")
     rows = shapeImg.shape[0]
     cols = shapeImg.shape[1]
-    perspectiveResizeY=int((rows/2)*(1+2*math.atan(cameraHeightIn/desiredPerspectiveRangeIn)/verticalFOV))#the location to shift from for bird's eye view
+    perspectiveResizeY = int((rows/2) * (1 + 2*math.atan(cameraHeightIn / desiredPerspectiveRangeIn) / verticalFOV))#the location to shift from for bird's eye view
     perspectiveResizeXLeft=int((cols/2)*(1-2*math.atan((resizecols/2)/desiredPerspectiveRangeIn)/horizontalFOV))#^
     perspectiveResizeXRight=int((cols/2)*(1+2*math.atan((resizecols/2)/desiredPerspectiveRangeIn)/horizontalFOV))#^
     finalCols = perspectiveResizeXRight-perspectiveResizeXLeft
@@ -130,7 +130,7 @@ def take_picture():
     lower = np.array([blueHSV-deltaHSV,50,50])
     upper = np.array([blueHSV+deltaHSV,255,255])
     mask = cv.inRange(imghsv, lower, upper)
-    
+#    waitTime(0.4)
     return mask #set a global variable for functions to reference 
 
 
@@ -200,7 +200,7 @@ def measure_angle():
         
         prevTapeAngle = tapeAngle
     if tapeAngle!=TAPE_NOT_FOUND_SET:    
-        saveImg('angle',mask)
+        showImgThenCrash('angle',mask)
     return tapeAngle
 
 
@@ -220,12 +220,12 @@ def measure_line():
         #since this perspective has pixels proportional to the physical distances, a simple constant can be used to determine the distance 
         lengthToLine = int((desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-topOfLine)/perspectiveRows)+cameraToWheelOffsetIn+0.5)
         #=====================Distance Output=======================
-        print(str(lengthToLine)+" in")
+#        print(str(lengthToLine)+" in")
         #print(str(topOfLine)+" of "+str(perspectiveRows))
     
     #--------------------------------------/\Image Measurment/\--------------------------------------
 
-    return lengthToLine
+    return lengthToLine-6
 
 
 #will return the distance to the start of a line the robot is aligned with
@@ -240,16 +240,16 @@ def measure_distance_to_start():
         print('No markers found')#tape not found flag = -126
     else:
         #find the length of a straight line at its base to the end
-        bottomOfLine=max(nonzero[0])/2
-        # since this perspective has pixels proportional to the physical distances, a simple constant can be used to determine the distance 
-        lengthToLine = int((desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-bottomOfLine)/perspectiveRows)+cameraToWheelOffsetIn+0.5)
+        topOfLine=max(nonzero[0])/2
+        #since this perspective has pixels proportional to the physical distances, a simple constant can be used to determine the distance 
+        lengthToLine = int((desiredPerspectiveRangeIn-cameraToWheelOffsetIn)*((perspectiveRows-topOfLine)/perspectiveRows)+cameraToWheelOffsetIn+0.5)
         #=====================Distance Output=======================
-        print(str(lengthToLine)+" in")
-#        print(str(bottomOfLine)+" of "+str(perspectiveRows))
+#        print(str(lengthToLine)+" in")
+        #print(str(topOfLine)+" of "+str(perspectiveRows))
     
     #--------------------------------------/\Image Measurment/\--------------------------------------
 
-    return lengthToLine
+    return lengthToLine-12
  
  
 #returns a masked wide view for angle measurment
@@ -259,10 +259,10 @@ def wide_angle_():
     mask = take_picture()
     imgtuple = (cols,rows)
     mask = cv.resize(mask, imgtuple)
-    kernel = np.ones((5,5),np.uint8)#create kernel
-    mask = cv.erode(mask,kernel,iterations=2)#dialate to fill in gap
+    kernel = np.ones((7,7),np.uint8)#create kernel
+    mask = cv.erode(mask,kernel,iterations=1)#dialate to fill in gap
     mask = cv.blur(mask,(5,5))#blur to smooth
-    mask = cv.blur(mask,(5,5))#blur to smooth
+#    mask = cv.blur(mask,(5,5))#blur to smooth
 
     #=========================================\/Image Processing Block\/=========================================
     #--------------------------------------\/Image Masking\/--------------------------------------
@@ -323,7 +323,7 @@ def readData():
             data = int(data)
         except:
             data = 0      
-        print(data);
+#        print(data);
     return data
 
 
@@ -356,9 +356,9 @@ def state_start():
 # This state primarily takes place on the arduino where the robot is rotated half its FOV clockwise. The flag
 # rotateComplete will be set to -127 and sent to the Pi when the robot has finished rotating
 def state_FOV_rotate():
-    waitTime(0.5)
+#    waitTime(0.5)
     print("state_FOV_rotate")
-    writeData(MOTION_TYPE_ROTATE, 30)
+    writeData(MOTION_TYPE_ROTATE, 50)
     waitForMotion()    
     return state_turn_to_start    # Move to next state
 
@@ -380,8 +380,13 @@ def state_turn_to_start():
         print("\ttapeAngle =", tapeAngle)
         writeData(MOTION_TYPE_ROTATE, tapeAngle)
         waitForMotion()        
-        return state_drive_to_start()    
+        return state_drive_closer()    
 
+def state_drive_closer():
+    print("state_drive_closer")
+    writeData(MOTION_TYPE_FORWARD, 12)
+    waitForMotion()
+    return state_drive_to_start()
 
 # Calculate the distance from the robot to the start of the tape path then drive
 def state_drive_to_start():

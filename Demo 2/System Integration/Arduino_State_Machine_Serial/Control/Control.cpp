@@ -32,7 +32,7 @@ bool Control::drive(float targetPhi, float targetRho) {
 	// Instead of running forever or waiting for the error to hit zero and cutting it off,
 	// I'll use millis() and a local variable to keep track of how long the motors are off
 	// That way it wont go forever or get cut off too fast
-	
+
 	// Setup once
 	startControl();
 
@@ -62,7 +62,6 @@ bool Control::drive(float targetPhi, float targetRho) {
 	// Set the motors to the new speeds
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 
-	
 	if(isDone()) {
 		stopControl(); // Clean up locals
 		return true;
@@ -90,8 +89,6 @@ void Control::startControl() {
 	// Save current time
 	currentTime = millis();
 	startTime = millis();
-
-
 
 	// Set left and right motor speeds to 0
 	motors.setSpeeds(0, 0);
@@ -122,8 +119,6 @@ void Control::getPositions() {
 	// Find current robot positions
 	phi = (RADIUS * RAD_CONVERSION * float(counts.L - counts.R)) / BASE;
 	rho = RADIUS * RAD_CONVERSION * float(counts.L + counts.R) * float(0.5);
-
-
 }
 
 float Control::controlRho(float current, float desired) {
@@ -134,6 +129,11 @@ float Control::controlRho(float current, float desired) {
 	// Calculate P component
 	P = KP_RHO * error;
 	// Calculate I component
+	// Give I some help if the error changes sign
+	if(error < 0 && I_rho > 0) I_rho = 0; //!< NEW
+	if(error > 0 && I_rho < 0) I_rho = 0; //!< NEW
+	if(abs(error) <= 0.001 || abs(error) >= 5) I_rho = 0; //!< NEW
+
 	I_rho += KI_RHO * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
 	// Calculate D component
 	if (currentTime > 0) {
@@ -171,7 +171,13 @@ float Control::controlPhi(float current, float desired) {
 	error = desired - current;
 	// Calculate P component
 	P = KP_PHI * error;
+
 	// Calculate I component
+	// Give I some help if the error changes sign
+	if(error < 0 && I_phi > 0) I_phi = 0; //!< NEW
+	if(error > 0 && I_phi < 0) I_phi = 0; //!< NEW
+	if(abs(error) <= 0.0001 || abs(error) >= 15*PI/180) I_phi = 0; //!< NEW
+
 	I_phi += KI_PHI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
 	// Calculate D component
 	if (currentTime > 0) {
@@ -189,13 +195,13 @@ float Control::controlPhi(float current, float desired) {
 	if(error < -0.1 && output > -80) output = -80;
 
 	// Print current values for testing
-	//Serial.print("phi: "); Serial.print(current,5);
-	//Serial.print("\ttargetPhi: "); Serial.print(desired);
-	//Serial.print("\terror: "); Serial.print(error,5);
+	Serial.print("phi: "); Serial.print(current,5);
+	Serial.print("\ttargetPhi: "); Serial.print(desired);
+	Serial.print("\terror: "); Serial.print(error,5);
 	//Serial.print("\tP: "); Serial.print(P);
 	//Serial.print("\tI: "); Serial.print(I_phi);
 	//Serial.print("\tD: "); Serial.print(D);
-	//Serial.print("\tnewDif: "); Serial.println(output);
+	Serial.print("\tnewDif: "); Serial.println(output);
 
 	return output;
 }
@@ -226,7 +232,7 @@ bool Control::isDone() {
 	// if current position is the same as the previous position
 
 	// Every MIN_SETTLING_TIME milliseconds
-	if (millis() - startTime >= lastTime + MIN_SETTLING_TIME) {
+	if (millis()-startTime >= lastTime + MIN_SETTLING_TIME) {
 
 		lastTime += MIN_SETTLING_TIME;
 
