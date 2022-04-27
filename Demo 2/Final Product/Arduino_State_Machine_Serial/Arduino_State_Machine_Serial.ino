@@ -45,10 +45,6 @@ Control control; //!< magic
 void setup() {
     // Begin serial communication
     Serial.begin(9600); // start serial for output
-
-    // Get initial values of currentTime and startTime
-    control.startControl();
-
     dumpData(); 
 }
 

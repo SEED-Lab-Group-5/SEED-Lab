@@ -331,7 +331,7 @@ def writeData(motionType, motionMagnitude):
 #    
     ser.write((str(motionType)+" "+str(motionMagnitude)+'\n').encode('utf-8'))
     ser.reset_output_buffer()
-    time.sleep(2)
+#    time.sleep(2)
     return -1
 
 
@@ -368,9 +368,9 @@ def state_turn_to_start():
     print("state_turn_to_start")
     
     # Use the camera to measure the angle to the tape
-    tapeAngle = measure_angle()
+#    tapeAngle = measure_angle()
 #    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
-#    tapeAngle = 10                     # NOTE: Placeholder - Use to test if tape WAS found
+    tapeAngle = 10                     # NOTE: Placeholder - Use to test if tape WAS found
     
     # Implement find tape code here    
     if(tapeAngle == TAPE_NOT_FOUND_SET):        
@@ -387,8 +387,8 @@ def state_turn_to_start():
 def state_drive_to_start():
     print("state_drive_to_start()") 
 
-#    distToStart = 24  # NOTE: Placeholder   
-    distToStart = measure_distance_to_start()
+    distToStart = 24  # NOTE: Placeholder   
+#    distToStart = measure_distance_to_start()
     
     
     if distToStart == TAPE_NOT_FOUND_SET:
@@ -409,8 +409,8 @@ def state_turn_inline_to_path():
     print("state_turn_inline_to_path")
     
     # Use the camera to measure the angle to the tape
-#    angleToEnd = 6  # NOTE: Placeholder
-    angleToEnd = measure_angle()
+    angleToEnd = 6  # NOTE: Placeholder
+#    angleToEnd = measure_angle()
 
     if angleToEnd == TAPE_NOT_FOUND_SET:
         print("\tTape Not Found")
@@ -428,8 +428,8 @@ def state_drive_to_end():
       
     print("state_drive_to_end")     
 
-#    distToEnd = 36  # NOTE: Placeholder  
-    distToEnd = measure_line()
+    distToEnd = 36  # NOTE: Placeholder  
+#    distToEnd = measure_line()
     
     if distToEnd == TAPE_NOT_FOUND_SET:
         return state_drive_to_end
