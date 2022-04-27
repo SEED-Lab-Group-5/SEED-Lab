@@ -1,0 +1,389 @@
+
+
+####################################################################### 
+# NAME:     Johnathan Evans
+# CLASS:    EENG-350
+# TITLE:        Demo-1
+# FUNCTION:     Assist a robot in moving by supplying an angle and distance
+# RUNNING:   Use Pi, press go
+# RESOURCE:     https://docs.opencv.org/4.1.0/d6/d00/tutorial_py_root.html
+# PURPOSE:   openCV resource
+#######################################################################
+
+
+import serial
+import cv2 as cv
+import numpy as np
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
+import math
+
+
+#import matplotlib.pyplot as plt
+print(cv.__version__)
+
+def rad(deg):#quick finction to convert rads to degrees
+    return (deg * math.pi) / 180
+
+
+def deg(rad):#quick finction to convert degrees to rads
+    return (rad * 180) / math.pi
+
+
+# Set serial address and baud rate
+ser = serial.Serial('/dev/ttyACM0', 9600)
+time.sleep(1)   # Wait a moment to finalize the connection
+
+# Flags and transmission codes
+
+MOTION_COMPLETE_SET = -127  # Transmitted from Arduino when flag is set
+START_STATE_MACHINE_SET = -126
+MOTION_TYPE_ROTATE = -125
+MOTION_TYPE_FORWARD = -124
+TAPE_NOT_FOUND_SET = -123
+
+motionComplete = False        # Indicates if robot is done rotating 
+tapeFound = False             # Indicates if tape was found in the field of view
+atStart = False               # Indicates if robot has stopped moving forward
+startStateMachine = False
+
+
+MIN_CONSECUTIVE_SAME_ANGLE_COUNT = 1    # Number of concurrent angle readings that must be same before returning tape angle
+blueHSV = 103#100 or 95 depending on type of tape
+deltaHSV = 10
+cols = int(672)
+rows = int(496)
+horizontalFOV=rad(59)#FOV
+verticalFOV=rad(43.85)#FOV
+cameraHeightIn=7#height of camera from ground
+cameraToWheelOffsetIn=abs(cameraHeightIn/math.tan(verticalFOV))#distance form the camera's closest viewto the wheels
+crossTolerance = 0.90 #percentage of horizontal screen to scan for cross
+showImg=True#decides if the frame is shown on the screen or not
+camera = PiCamera()
+
+
+def saveImg(name,img):
+    if (showImg):
+        cv.imshow(name,img)
+        cv.waitKey(0)
+
+def waitTime(secondsToWait):
+    startTime = time.time()
+    while time.time() < startTime + secondsToWait:
+        pass
+    return False
+
+#################################################################
+# Camera States
+#################################################################
+#
+#measure_angle()
+#returns angle from a small sliver of screen
+#TODO: measure_start_angle()
+#      returns angle from a longer range of view
+
+
+#takes pic and masks
+def take_picture(cropY,cropX):
+    rawCapture = PiRGBArray(camera)
+    try:
+        camera.capture(rawCapture, format="bgr")
+        img = rawCapture.array
+    except:
+        print("Failed Image Capture")
+    #resize for quicker processing
+    imgtuple = (cols,rows)
+    img = cv.resize(img, imgtuple)
+    img = crop_out_noise(img,int(rows/cropY),int(cols/cropX))
+    #image Processing
+    #img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    imghsv = cv.cvtColor(img, cv.COLOR_RGB2HSV)
+    lower = np.array([blueHSV-deltaHSV,50,50])
+    upper = np.array([blueHSV+deltaHSV,255,255])
+    mask = cv.inRange(imghsv, lower, upper)
+    kernel = np.ones((5,5),np.uint8)#create kernel
+#     mask = cv.erode(mask,kernel,iterations=2)#dialate to fill in gap
+#     mask = cv.blur(mask,(5,5))#blur to smooth
+#     mask = cv.blur(mask,(5,5))#blur to smooth
+    
+    return mask#set a global variable for functions to reference 
+
+
+#alters the image size to isolate the floor in fromt of the robot
+def crop_out_noise(img,frameSizeY,frameSizeX):
+    crop = img[int(rows-frameSizeY):int(rows*(0.95)), int(cols/2-frameSizeX/2):int(cols/2+frameSizeX/2)]
+    #0.95 is to eliminate the strip of rgb error on the open cv
+    return crop
+
+    
+
+
+#locates and points to a tape that may be outside of the screen
+def measure_angle():
+    consecutiveSameAngleCount = 0
+    prevTapeAngle = TAPE_NOT_FOUND_SET
+    
+    # Wait until tape angle reported is the same for MIN_CONSECUTIVE_SAME_ANGLE_COUNT consecutive loops before returning angle
+    while (consecutiveSameAngleCount < MIN_CONSECUTIVE_SAME_ANGLE_COUNT):
+        mask = take_picture(4.0,1.0)#Crop values for the picture
+#        cv.imshow('frame',mask)
+        #--------------------------------------\/Image Measurment\/--------------------------------------
+        nonzero = np.nonzero(mask)
+        if len(nonzero[0])==0:
+            tapeAngle = TAPE_NOT_FOUND_SET
+    #        print('No markers found')#tape not found flag = -126
+        else:
+            #find angle
+            location = nonzero[1].mean()
+            phi = (deg(horizontalFOV)/2)*(location-cols/2)/(cols/2)
+            #=====================Angle Output=======================
+            if phi>=0:
+                tapeAngle = int(phi+0.5)#0.5 for more accurate integer rounding
+            else:
+                tapeAngle = int(phi-0.5)#0.5 for more accurate integer rounding
+        #--------------------------------------/\Image Measurment/\--------------------------------------
+#        print(tapeAngle)
+        if tapeAngle == prevTapeAngle:
+            consecutiveSameAngleCount += 1
+        
+        prevTapeAngle = tapeAngle
+            
+    return tapeAngle
+
+def measure_start_angle():
+    consecutiveSameAngleCount = 0
+    prevTapeAngle = TAPE_NOT_FOUND_SET
+    
+    # Wait until tape angle reported is the same for MIN_CONSECUTIVE_SAME_ANGLE_COUNT consecutive loops before returning angle
+    while (consecutiveSameAngleCount < MIN_CONSECUTIVE_SAME_ANGLE_COUNT):
+        mask = take_picture(2.0,1.0)#Crop values for the picture
+#        cv.imshow('frame',mask)
+        #--------------------------------------\/Image Measurment\/--------------------------------------
+        nonzero = np.nonzero(mask)
+        if len(nonzero[0])==0:
+            tapeAngle = TAPE_NOT_FOUND_SET
+    #        print('No markers found')#tape not found flag = -126
+        else:
+            #find angle
+            location = nonzero[1].mean()
+            phi = (deg(horizontalFOV)/2)*(location-cols/2)/(cols/2)
+            #=====================Angle Output=======================
+            if phi>=0:
+                tapeAngle = int(phi+0.5)#0.5 for more accurate integer rounding
+            else:
+                tapeAngle = int(phi-0.5)#0.5 for more accurate integer rounding
+        #--------------------------------------/\Image Measurment/\--------------------------------------
+#        print(tapeAngle)
+        if tapeAngle == prevTapeAngle:
+            consecutiveSameAngleCount += 1
+        
+        prevTapeAngle = tapeAngle
+            
+    return tapeAngle
+
+def show_img(img2show):
+    cv.imshow('frame', img2show)
+    cv.waitKey()
+    
+def is_cross(mask):
+    nonzero = np.nonzero(mask)
+    if len(nonzero[0])==0:
+        tapeAngle = -126 #tape not found flag = -126
+    else:
+        maxTolerance = max(nonzero[1])
+        minTolerance = min(nonzero[1])
+        print(maxTolerance)
+        print(minTolerance)
+        print(crossTolerance*frameSizeX)
+        if (maxTolerance-minTolerance>(crossTolerance*frameSizeX)):
+            return True
+    return False
+    
+#################################################################
+# Data functions
+#################################################################
+def readData():
+    
+    data = 0
+    # While there are still bytes to be read from the buffer
+    while (ser.in_waiting > 0):
+        # Read line from buffer and decode using utf-8 
+        data = ser.readline().decode('utf-8').rstrip('\n')
+        try:
+            data = int(data)
+        except:
+            data = 0      
+        print(data);
+    return data
+
+
+def writeData(newAngle, newDistance):
+#    
+    ser.write((str(newAngle)+" "+str(newDistance)+'\n').encode('utf-8'))
+    ser.reset_output_buffer()
+#    time.sleep(2)
+    return -1
+
+
+# Wait until the rotationComplete flag is transmitted from the Arduino (Robot has stopped rotating)
+def waitForMotion():
+    motionComplete = 0
+    while motionComplete != MOTION_COMPLETE_SET:
+        if ser.in_waiting > 0:
+            motionComplete = readData()    # Read from the Serial line and see if motionComplete flag was set and transmitted       
+
+
+#################################################################
+# States
+#################################################################
+
+# This is the start state. No code takes place here.
+def state_start():
+    print("state_start")
+    return state_FOV_rotate
+
+
+# This state primarily takes place on the arduino where the robot is rotated half its FOV clockwise. The flag
+# rotateComplete will be set to -127 and sent to the Pi when the robot has finished rotating
+def state_FOV_rotate():
+    waitTime(0.5)
+    print("state_FOV_rotate")
+    writeData(MOTION_TYPE_ROTATE, 30)
+    waitForMotion()    
+    return state_turn_to_start    # Move to next state
+
+
+# Rotate the robot to be in line with the start of the tape path
+def state_turn_to_start():
+    print("state_turn_to_start")
+    
+    # Use the camera to measure the angle to the tape
+#    tapeAngle = measure_start_angle()
+#    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
+    tapeAngle = 10                     # NOTE: Placeholder - Use to test if tape WAS found
+    
+    # Implement find tape code here    
+    if(tapeAngle == TAPE_NOT_FOUND_SET):        
+        print("\tTape Not Found")
+        return state_FOV_rotate
+    else:
+        print("\ttapeAngle =", tapeAngle)
+        writeData(MOTION_TYPE_ROTATE, tapeAngle)
+        waitForMotion()        
+        return state_drive_to_start()    
+
+
+# Calculate the distance from the robot to the start of the tape path then drive
+def state_drive_to_start():
+    print("state_drive_to_start()") 
+
+#   move the constant distance to start 
+    distToStart = 17  # NOTE: the sqrt of two times 12 inches    
+    
+    
+    if distToStart == TAPE_NOT_FOUND_SET:
+        print("\tTape Not Found")
+        return state_drive_to_start
+    
+    else:
+        print("\tDistance To Start =", distToStart)
+        writeData(MOTION_TYPE_FORWARD, distToStart)    
+        waitForMotion()  
+        return state_turn_inline_to_path
+
+    
+
+
+# Calculate the angle the robot needs to turn to to be in line with the tape path
+def state_turn_inline_to_path():
+    print("state_turn_inline_to_path")
+    
+#   move a constant angle to align with start 
+    angleToEnd = -22  # NOTE: the constant angle after moving to start
+
+    if angleToEnd == TAPE_NOT_FOUND_SET:
+        print("\tTape Not Found")
+        return state_turn_inline_to_path
+    
+    else:
+        print("\tAngle To End =", angleToEnd)
+        writeData(MOTION_TYPE_ROTATE, angleToEnd)    
+        waitForMotion()
+        
+        return angle_update
+
+
+# Calculate the distance from the robot to the end of the tape path
+def angle_update():
+#    TODO: if angle measured is above a fudge delta, turn angle then move constant distance
+#    if below delta, dont turn and move straight
+#----Try without fudge first
+#    if not found, turn right some constant
+#    must detect cross and move on
+    
+      
+    print("state_drive_to_end")     
+
+    distToEnd = 36  # NOTE: Placeholder  
+#    distToEnd = measure_line()
+    
+    if distToEnd == TAPE_NOT_FOUND_SET:
+        return state_drive_to_end
+    
+    else: 
+        print("\tDistance To End =", distToEnd)
+        writeData(MOTION_TYPE_FORWARD, distToEnd)    
+        waitForMotion()  
+        return state_stop
+    
+
+# The end of the tape was reached. Exit the state machine
+def state_stop():
+    ser.close()
+    return None
+
+
+
+# initalization
+state = state_start # initial state
+
+
+#init videocapture
+cap = cv.VideoCapture(0)
+if not cap.isOpened():
+#    print("Cannot open camera")
+    exit()
+
+
+# The Finite state Loop
+while state is not None: # Run until state is None   
+    # Capture frame-by-frame
+    
+    # if frame is read correctly ret is True
+    #currentImg = take_picture()
+    
+    # Our operations on the frame come here
+    #waitTime(0.5)
+    #--------------------------------------\/Finite State\/--------------------------------------
+    #waitTime(0.2)
+    new_state = state() # launch state machine
+    state = new_state # update the next state
+        
+    #--------------------------------------/\Finite State/\--------------------------------------    
+    cap.release()
+
+    # Display the resulting frame
+    
+    
+print("Done with state machine")
+# When everything done, release the capture
+cv.destroyAllWindows()
+
+
+
+
+
+
+
+
