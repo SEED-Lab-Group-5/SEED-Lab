@@ -356,7 +356,10 @@ def state_update_angle():
 def state_check_for_cross():
     print("state_check_for_cross")
     # Function to check for cross goes here
-    crossFound = True    # NOTE: Placeholder. Implement function to set this flag
+    
+    img = take_picture(2.0,1.0)
+    if (is_cross(img)):
+            crossFound = True    # NOTE: Placeholder. Implement function to set this flag
     return state_drive_forward
 
 
