@@ -63,10 +63,10 @@ totalPathRotation = 0;          # Tracks the total rotation the robot has made o
 ROTATION_BEFORE_CROSS = 450     # Angle the robot must traverse before it is know it is near the end of the tape
 FORWARD_STEP_DISTANCE = 10      # The distance the robot should drive forward after each turn
 crossFound = False              # Flag to denote whether the cross at the end of the path was found
-VIEW_SHIFT_ANGLE = 30            # The angle the robot should turn in the update angle state if the tape is not found
+VIEW_SHIFT_ANGLE = 30           # The angle the robot should turn in the update angle state if the tape is not found
 ANGLE_FUDGE_DELTA = 0           # The minimum angle the robot should attempt to turn to in the update angle state
 ANGLE_AFTER_START = -45         # The angle the robot should rotate to after moving to the start
-
+MOTION_COMPLETE_TIME = 1000     # The time the robot should wait after sending a motion command to the Arduino
 def saveImg(name,img):
     if (showImg):
         cv.imshow(name,img)
@@ -79,14 +79,8 @@ def waitTime(secondsToWait):
     return False
 
 #################################################################
-# Camera States
+# Camera Functions
 #################################################################
-#
-#measure_angle()
-#returns angle from a small sliver of screen
-#TODO: measure_start_angle()
-#      returns angle from a longer range of view
-
 
 #takes pic and masks
 def take_picture(cropY,cropX):
@@ -161,7 +155,6 @@ def measure_start_angle():
     
     # Wait until tape angle reported is the same for MIN_CONSECUTIVE_SAME_ANGLE_COUNT consecutive loops before returning angle
     while (consecutiveSameAngleCount < MIN_CONSECUTIVE_SAME_ANGLE_COUNT):
-#    waitTime(1)
         mask = take_picture(1.5,1.05)
     #    show_img(mask)
         #--------------------------------------\/Image Measurment\/--------------------------------------
@@ -229,7 +222,6 @@ def readData():
 def writeMotionData(newAngle, newDistance):   
     ser.write((str(newAngle)+" "+str(newDistance)+'\n').encode('utf-8'))
     ser.reset_output_buffer()
-#    time.sleep(2)
     return -1
 
 
@@ -259,7 +251,7 @@ def state_FOV_rotate():
     waitTime(0.5)
     print("state_FOV_rotate")
     writeMotionData(30, 0)
-    waitForMotion()    
+    waitTime(MOTION_COMPLETE_TIME)   
     return state_turn_to_start    # Move to next state
 
 
@@ -281,7 +273,7 @@ def state_turn_to_start():
     else:
         print("\ttapeAngle =", tapeAngle)
         writeMotionData(tapeAngle, 0)
-        waitForMotion()        
+        waitTime(MOTION_COMPLETE_TIME)        
         return state_drive_to_start()    
 
 
@@ -294,7 +286,7 @@ def state_drive_to_start():
     # Move the constant distance to start 
     distToStart = 18  # The sqrt of two times 12 inches    
     writeMotionData(0, distToStart)    
-    waitForMotion()  
+    waitTime(MOTION_COMPLETE_TIME)  
     return state_turn_CCW
 
     
@@ -306,7 +298,7 @@ def state_turn_CCW():
     
     # move a constant angle to align with start
     writeMotionData(ANGLE_AFTER_START, 0)    
-    waitForMotion()
+    waitTime(MOTION_COMPLETE_TIME)
     return state_update_angle
 
 
@@ -336,11 +328,11 @@ def state_update_angle():
         global totalPathRotation
         if totalPathRotation >= ROTATION_BEFORE_CROSS:            
             writeMotionData(nextAngle, 0)    
-            waitForMotion()
+            waitTime(MOTION_COMPLETE_TIME)
             return state_check_for_cross
         else:    
             writeMotionData(nextAngle, 0)    
-            waitForMotion()
+            waitTime(MOTION_COMPLETE_TIME)
             totalPathRotation += nextAngle      # Add the angle turned to the counter NOTE: This may need to be tweeked to interact with the angle fudge factor properly
             return state_drive_forward
         
@@ -356,7 +348,10 @@ def state_update_angle():
 def state_check_for_cross():
     print("state_check_for_cross")
     # Function to check for cross goes here
-    crossFound = True    # NOTE: Placeholder. Implement function to set this flag
+    
+    img = take_picture(2.0,1.0)
+    if (is_cross(img)):
+            crossFound = True    # NOTE: Placeholder. Implement function to set this flag
     return state_drive_forward
 
 
@@ -367,11 +362,11 @@ def state_drive_forward():
     print("state_drive_forward")
     if not crossFound:
         writeMotionData(0, FORWARD_STEP_DISTANCE)
-        waitForMotion()
+        waitTime(MOTION_COMPLETE_TIME)
         return state_update_angle
     else:
         writeMotionData(0, FORWARD_STEP_DISTANCE)   # May need to change the last move forward
-        waitForMotion()
+        waitTime(MOTION_COMPLETE_TIME)
         return state_stop
 
 

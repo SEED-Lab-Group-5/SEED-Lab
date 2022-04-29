@@ -20,7 +20,7 @@
 
 
 // Define data types needed for finite state machine
-typedef enum {START, DRIVE, WAIT, SEND_STATUS} currentState_t;
+typedef enum {DRIVE, WAIT} currentState_t;
 
 // Flags and transmission codes
 bool motionComplete = false;         //!< Indicates if robot has stopped moving/rotating
@@ -64,20 +64,14 @@ void loop() {
             break;
 
 
-        // DRIVE State: Rotate the robot by a given angle or drive forward a given distance motionComplete
-        //              will be set to -127 and sent to the Pi when the robot has moving
+        // DRIVE State: Rotate the robot by a given angle or drive forward a given distance
         case DRIVE:
             motionComplete = control.drive(newAngle, newDistance);
             if (motionComplete) {
                 motionComplete = false;
-                currentState = SEND_STATUS;
+                currentState = WAIT;
             }
             break;
-
-        // SEND_STATUS State: Tell the Pi that motion is complete
-        case SEND_STATUS:
-            writeData(MOTION_COMPLETE_SET);
-            currentState = WAIT;
     }
 }
 
