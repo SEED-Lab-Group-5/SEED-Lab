@@ -130,7 +130,7 @@ def measure_angle():
     
     # Wait until tape angle reported is the same for MIN_CONSECUTIVE_SAME_ANGLE_COUNT consecutive loops before returning angle
     while (consecutiveSameAngleCount < MIN_CONSECUTIVE_SAME_ANGLE_COUNT):
-        mask = take_picture(3.0,1.05)#Crop values for the picture
+        mask = take_picture(4.0,1.05)#Crop values for the picture
 #        cv.imshow('frame',mask)
         #--------------------------------------\/Image Measurment\/--------------------------------------
         nonzero = np.nonzero(mask)
