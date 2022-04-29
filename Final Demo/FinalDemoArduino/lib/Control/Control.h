@@ -41,7 +41,7 @@ public:
 	void startControl(); //!< setup
 	static void stopControl();
 	bool drive(float targetPhi, float targetRho);
-
+	// TODO make another version of drive() that only takes a target angle with a constant motorSum
 	// Status
 	bool isDone();
 
@@ -57,7 +57,7 @@ private:
 	float error = 0, pastErrorRho = 0, pastErrorPhi = 0;        //!< Variables used in calculating control output
 	float I_rho = 0, I_phi = 0;                             //!< Integral controller accumulations
 	unsigned long currentTime = 0, startTime = 0, lastTime = 0;           //!< For creating a discrete time controller
-	unsigned long MIN_SETTLING_TIME = 1000;					//!< Time in ms to wait for motors to settle // TODO adjust this if needed
+	unsigned long MIN_SETTLING_TIME = 500;					//!< Time in ms to wait for motors to settle // TODO was 1000, testing 500
 	bool firstRho = true;               //!< Flag for accurately determining forward counts after rotating
 	bool driveStarted = false;			//!< Set to true when startControl() is called for the first time
 

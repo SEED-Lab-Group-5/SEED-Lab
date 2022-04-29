@@ -31,7 +31,10 @@ Control::Control(){
 bool Control::drive(float targetPhi, float targetRho) {
 	// Instead of running forever or waiting for the error to hit zero and cutting it off,
 	// I'll use millis() and a local variable to keep track of how long the motors are off
-	// That way it wont go forever or get cut off too fast
+	// That way it won't go forever or get cut off too fast
+
+	// TODO if Johnny sends a 45 degree angle, stop moving, otherwise move forward at constant speed?
+	// TODO implement while(Not-serial)
 
 	// Setup once
 	startControl();
@@ -48,6 +51,7 @@ bool Control::drive(float targetPhi, float targetRho) {
 		// Calculate ∆Va
 		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180));
 		// only start moving forward when done turning
+		// TODO make it so the robot can rotate and move forward at the same time
 		if(abs(motorDif) < 20) {
 			if(firstRho) { // to mitigate the initial encoder readings from turning
 				rhoOffset = RADIUS*RAD_CONVERSION*float(counts.L + counts.R)*float(0.5);
@@ -60,6 +64,7 @@ bool Control::drive(float targetPhi, float targetRho) {
 	// Determine target motor speeds based on motorDif and motorSum using setMotorValues()
 	setMotors(motorDif,motorSum);
 	// Set the motors to the new speeds
+	// TODO are we doing a constant forward velocity? If so, hardcode motorsum unless
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 
 	if(isDone()) {
@@ -122,6 +127,7 @@ void Control::getPositions() {
 }
 
 float Control::controlRho(float current, float desired) {
+	// TODO make constant speed
 
 	float P = 0, D = 0, output = 0;
 	// Calculate error
@@ -228,9 +234,7 @@ void Control::setMotors(float diff, float sum) const {
 bool Control::isDone() {
 	bool done = false;
 	// If the errors are low enough for long enough, return true
-
 	// if current position is the same as the previous position
-
 	// Every MIN_SETTLING_TIME milliseconds
 	if (millis()-startTime >= lastTime + MIN_SETTLING_TIME) {
 

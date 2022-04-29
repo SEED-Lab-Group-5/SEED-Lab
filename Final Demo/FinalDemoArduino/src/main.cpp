@@ -32,8 +32,8 @@ int MOTION_TYPE_FORWARD = -124;
 // Serial
 String dataString;                  //!< Value to store data received over serial
 bool dataReceived = false;          //!< Indicates if data was read from the Pi
-int motionType = MOTION_TYPE_ROTATE;
-int motionMagnitude = 0;
+int newAngle = MOTION_TYPE_ROTATE;
+int newDistance = 0;
 int magnitude = 0;
 
 void dumpData();
@@ -50,7 +50,7 @@ void setup() {
 	Serial.begin(9600); // start serial for output
 
 	// Get initial values of currentTime and startTime
-	control.startControl();
+	//control.startControl();
 
 	dumpData();
 }
@@ -76,13 +76,7 @@ void loop() {
 			// DRIVE State: Rotate the robot by a given angle or drive forward a given distance motionComplete
 			//              will be set to -127 and sent to the Pi when the robot has moving
 		case DRIVE:
-			if (motionType == MOTION_TYPE_ROTATE) {
-				digitalWrite(LED_BUILTIN, HIGH);
-				motionComplete = control.drive(motionMagnitude, 0);
-			}
-			else if (motionType == MOTION_TYPE_FORWARD) {
-				motionComplete = control.drive(0, motionMagnitude);
-			}
+			motionComplete = control.drive(newAngle, newDistance);
 			if (motionComplete) {
 				motionComplete = false;
 				currentState = SEND_STATUS;
@@ -111,8 +105,8 @@ void writeData(int dataToWrite) {
 
 void serialEvent(){
 	if (Serial.available() > 0) {
-		motionType = Serial.readStringUntil(' ').toInt();
-		motionMagnitude = Serial.readStringUntil('\n').toInt();
+		newAngle = Serial.readStringUntil(' ').toInt();
+		newDistance = Serial.readStringUntil('\n').toInt();
 
 		dataReceived = true;    // Flag to indicate if a serial read operation has occured
 	}
