@@ -66,7 +66,7 @@ crossFound = False              # Flag to denote whether the cross at the end of
 VIEW_SHIFT_ANGLE = 30           # The angle the robot should turn in the update angle state if the tape is not found
 ANGLE_FUDGE_DELTA = 0           # The minimum angle the robot should attempt to turn to in the update angle state
 ANGLE_AFTER_START = -45         # The angle the robot should rotate to after moving to the start
-MOTION_COMPLETE_TIME = 1000     # The time the robot should wait after sending a motion command to the Arduino
+MOTION_COMPLETE_TIME = 2.0        # The time the robot should wait after sending a motion command to the Arduino
 def saveImg(name,img):
     if (showImg):
         cv.imshow(name,img)
@@ -248,10 +248,11 @@ def state_start():
 # This state primarily takes place on the arduino where the robot is rotated half its FOV clockwise. The flag
 # rotateComplete will be set to -127 and sent to the Pi when the robot has finished rotating
 def state_FOV_rotate():
-    waitTime(0.5)
+#    waitTime(0.5)
     print("state_FOV_rotate")
     writeMotionData(30, 0)
-    waitTime(MOTION_COMPLETE_TIME)   
+#    time.sleep(MOTION_COMPLETE_TIME)
+    waitTime(MOTION_COMPLETE_TIME)
     return state_turn_to_start    # Move to next state
 
 
@@ -273,7 +274,8 @@ def state_turn_to_start():
     else:
         print("\ttapeAngle =", tapeAngle)
         writeMotionData(tapeAngle, 0)
-        waitTime(MOTION_COMPLETE_TIME)        
+#        time.sleep(MOTION_COMPLETE_TIME)
+        waitTime(MOTION_COMPLETE_TIME)
         return state_drive_to_start()    
 
 
@@ -286,7 +288,8 @@ def state_drive_to_start():
     # Move the constant distance to start 
     distToStart = 18  # The sqrt of two times 12 inches    
     writeMotionData(0, distToStart)    
-    waitTime(MOTION_COMPLETE_TIME)  
+#    time.sleep(MOTION_COMPLETE_TIME)
+    waitTime(MOTION_COMPLETE_TIME)
     return state_turn_CCW
 
     
@@ -298,6 +301,7 @@ def state_turn_CCW():
     
     # move a constant angle to align with start
     writeMotionData(ANGLE_AFTER_START, 0)    
+#    time.sleep(MOTION_COMPLETE_TIME)
     waitTime(MOTION_COMPLETE_TIME)
     return state_update_angle
 
@@ -319,7 +323,8 @@ def state_update_angle():
     # If the tape was not found, turn right some constant
     if nextAngle == TAPE_NOT_FOUND_SET:
         writeMotionData(VIEW_SHIFT_ANGLE, 0)    
-        waitForMotion()
+#        time.sleep(MOTION_COMPLETE_TIME)
+        waitTime(MOTION_COMPLETE_TIME)
         return state_update_angle
 
     # If angle measured is above a fudge delta, turn angle then move constant distance
@@ -328,10 +333,12 @@ def state_update_angle():
         global totalPathRotation
         if totalPathRotation >= ROTATION_BEFORE_CROSS:            
             writeMotionData(nextAngle, 0)    
+#            time.sleep(MOTION_COMPLETE_TIME)
             waitTime(MOTION_COMPLETE_TIME)
             return state_check_for_cross
         else:    
             writeMotionData(nextAngle, 0)    
+#            time.sleep(MOTION_COMPLETE_TIME)
             waitTime(MOTION_COMPLETE_TIME)
             totalPathRotation += nextAngle      # Add the angle turned to the counter NOTE: This may need to be tweeked to interact with the angle fudge factor properly
             return state_drive_forward
@@ -362,10 +369,12 @@ def state_drive_forward():
     print("state_drive_forward")
     if not crossFound:
         writeMotionData(0, FORWARD_STEP_DISTANCE)
+#        time.sleep(MOTION_COMPLETE_TIME)
         waitTime(MOTION_COMPLETE_TIME)
         return state_update_angle
     else:
         writeMotionData(0, FORWARD_STEP_DISTANCE)   # May need to change the last move forward
+#        time.sleep(MOTION_COMPLETE_TIME)
         waitTime(MOTION_COMPLETE_TIME)
         return state_stop
 
@@ -381,9 +390,9 @@ def state_stop():
 
 
 # initalization
-state = state_update_angle # initial state
+#state = state_update_angle # initial state
 
-#state = state_start # initial state
+state = state_start # initial state
 
 
 #init videocapture

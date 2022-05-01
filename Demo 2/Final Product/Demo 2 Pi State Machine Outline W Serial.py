@@ -289,7 +289,7 @@ def measure_angle_to_start():
     #--------------------------------------\/Image Measurment\/--------------------------------------
     nonzero = np.nonzero(mask)
     if len(nonzero[0])==0:
-        tapeAngle = -126 #tape not found flag = -126
+        tapeAngle = TAPE_NOT_FOUND_SET #tape not found flag = -126
     else:
         
         #find angle by lookingfor the lowest vertical pointand taking the coresponding horizontal index
@@ -368,9 +368,9 @@ def state_turn_to_start():
     print("state_turn_to_start")
     
     # Use the camera to measure the angle to the tape
-#    tapeAngle = measure_angle()
+    tapeAngle = measure_angle()
 #    tapeAngle = TAPE_NOT_FOUND_SET    # NOTE: Placeholder - Use to test if tape was NOT found
-    tapeAngle = 10                     # NOTE: Placeholder - Use to test if tape WAS found
+#    tapeAngle = 10                     # NOTE: Placeholder - Use to test if tape WAS found
     
     # Implement find tape code here    
     if(tapeAngle == TAPE_NOT_FOUND_SET):        
