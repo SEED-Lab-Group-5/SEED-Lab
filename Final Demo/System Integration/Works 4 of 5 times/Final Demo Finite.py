@@ -61,7 +61,7 @@ camera = PiCamera()
 
 totalPathRotation = 0;          # Tracks the total rotation the robot has made over the path
 ROTATION_BEFORE_CROSS = 400     # Angle the robot must traverse before it is know it is near the end of the tape
-FORWARD_STEP_DISTANCE = 10      # The distance the robot should drive forward after each turn
+FORWARD_STEP_DISTANCE = 14      # The distance the robot should drive forward after each turn
 FORWARD_CROSS_DISTANCE = 15     #distance to move once the cross is located
 crossFound = False              # Flag to denote whether the cross at the end of the path was found
 VIEW_SHIFT_ANGLE = 45            # The angle the robot should turn in the update angle state if the tape is not found
