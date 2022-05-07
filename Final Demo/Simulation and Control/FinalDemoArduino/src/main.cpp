@@ -2,7 +2,7 @@
 // NAME:
 // CLASS:    EENG-350
 // GROUP:    5
-// TITLE:    Demo 2
+// TITLE:    Final Demo
 // FUNCTION: Write what your code does here
 // HARDWARE: Any hardware connections you must make to your device
 // SOFTWARE: Any software that must be installed to the device
@@ -14,56 +14,43 @@
 //////////////////////////////////////////////////////////////////////
 
 #include <Control.h>
-#include "DualMC33926MotorShield.h"
-#include "Encoder.h"
 #include "Arduino.h"
 
-
-// Define data types needed for finite state machine
+//!< Define data types needed for finite state machine
 typedef enum {START, DRIVE, WAIT, SEND_STATUS} currentState_t;
 
-// Flags and transmission codes
-bool motionComplete = false;        //!< Indicates if robot has stopped moving/rotating
-int  MOTION_COMPLETE_SET = -127;    //!< Transmitted to Pi when flag is set
-int START_STATE_MACHINE_SET = -126; //!< Indicates the Pi is ready and the state machine should start
-int MOTION_TYPE_ROTATE = -125;
-int MOTION_TYPE_FORWARD = -124;
+//!< Flags and transmission codes
+bool motionComplete = false;         //!< Indicates if robot has stopped moving/rotating
+int  MOTION_COMPLETE_SET = -127;     //!< Transmitted to Pi when flag is set
 
 // Serial
-String dataString;                  //!< Value to store data received over serial
-bool dataReceived = false;          //!< Indicates if data was read from the Pi
-int newAngle = MOTION_TYPE_ROTATE;
+String dataString;                   //!< Value to store data received over serial
+bool dataReceived = false;           //!< Indicates if data was read from the Pi
+int newAngle = 0;
 int newDistance = 0;
-int magnitude = 0;
 
+// Function Declarations
 void dumpData();
 void writeData(int dataToWrite);
 
-// Object
-Control control; //!< magic
 
-/**
- * Does initial setup
- */
+
+// Control Object
+Control control; 	//!< Controls the motion of the robot
+
 void setup() {
 	// Begin serial communication
-	Serial.begin(9600); // start serial for output
-
-	// Get initial values of currentTime and startTime
-	//control.startControl();
-
+	Serial.begin(19200); // start serial for output
 	dumpData();
 }
-
 //////////////////////////
-// Finite State Machine //
+//!< Finite State Machine //
 //////////////////////////
-
 static currentState_t currentState = WAIT;
 void loop() {
 	switch (currentState) {
 
-		// WAIT State: Wait until data is recieved from Pi
+		// WAIT State: Wait until data is received from Pi
 		case WAIT:
 			motionComplete = false;
 			if (dataReceived) {
@@ -71,8 +58,6 @@ void loop() {
 				dataReceived = false;
 			}
 			break;
-
-
 			// DRIVE State: Rotate the robot by a given angle or drive forward a given distance motionComplete
 			//              will be set to -127 and sent to the Pi when the robot has moving
 		case DRIVE:
@@ -97,7 +82,6 @@ void dumpData() {
 	}
 }
 
-
 void writeData(int dataToWrite) {
 	dumpData();
 	Serial.print(String(dataToWrite) + "\n");
@@ -107,7 +91,6 @@ void serialEvent(){
 	if (Serial.available() > 0) {
 		newAngle = Serial.readStringUntil(' ').toInt();
 		newDistance = Serial.readStringUntil('\n').toInt();
-
 		dataReceived = true;    // Flag to indicate if a serial read operation has occured
 	}
 	// Wait until buffer is empty

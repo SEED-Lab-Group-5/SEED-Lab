@@ -12,8 +12,6 @@
 #define ENC_R_YELLOW 5                                  //!< Right motor encoder output A (yellow wire)
 #define ENC_L_WHITE 3                                   //!< Left motor encoder output B (white wire)
 #define ENC_L_YELLOW 6                                  //!< Left motor encoder output A (yellow wire)
-
-
 const Pair<float> MIN_SPEED = {81.879180,80.635212};    //!< Minimum scaled PWM //TODO implement this
 // Pairs
 Pair<int> targetSpeed;              //!< Scaled PWM values given to motors.setSpeeds() each ranging from -400 to 400
@@ -29,15 +27,8 @@ Control::Control(){
 }
 
 bool Control::drive(float targetPhi, float targetRho) {
-	// Instead of running forever or waiting for the error to hit zero and cutting it off,
-	// I'll use millis() and a local variable to keep track of how long the motors are off
-	// That way it won't go forever or get cut off too fast
 
-	// TODO if Johnny sends a 45 degree angle, stop moving, otherwise move forward at constant speed?
-	// TODO implement while(Not-serial)
-
-	// Setup once
-	startControl();
+	startControl(); // Setup once
 
 	// Update encoder counts
 	counts = {EncL.read(), -EncR.read()};
@@ -51,7 +42,6 @@ bool Control::drive(float targetPhi, float targetRho) {
 		// Calculate ∆Va
 		motorDif = controlPhi(phi,targetPhi*float(PI)/float(180));
 		// only start moving forward when done turning
-		// TODO make it so the robot can rotate and move forward at the same time
 		if(abs(motorDif) < 20) {
 			if(firstRho) { // to mitigate the initial encoder readings from turning
 				rhoOffset = RADIUS*RAD_CONVERSION*float(counts.L + counts.R)*float(0.5);
@@ -64,18 +54,18 @@ bool Control::drive(float targetPhi, float targetRho) {
 	// Determine target motor speeds based on motorDif and motorSum using setMotorValues()
 	setMotors(motorDif,motorSum);
 	// Set the motors to the new speeds
-	// TODO are we doing a constant forward velocity? If so, hardcode motorsum unless
 	motors.setSpeeds(targetSpeed.L, -targetSpeed.R);
 
 	if(isDone()) {
 		stopControl(); // Clean up locals
 		return true;
 	}
-
 	return false;
 }
 
-
+/**
+ * Initialize the controller
+ */
 void Control::startControl() {
 	// Guard clause
 	if(driveStarted) return;
@@ -97,21 +87,17 @@ void Control::startControl() {
 
 	// Set left and right motor speeds to 0
 	motors.setSpeeds(0, 0);
-
 }
 
 /**
  * Reset controller when finished
  */
 void Control::stopControl() {
-
 	// Reset encoders
 	EncR.readAndReset();
 	EncL.readAndReset();
-
 	// Set left and right motor speeds to 0
 	motors.setSpeeds(0, 0);
-
 } // End
 
 
@@ -127,8 +113,6 @@ void Control::getPositions() {
 }
 
 float Control::controlRho(float current, float desired) {
-	// TODO make constant speed
-
 	float P = 0, D = 0, output = 0;
 	// Calculate error
 	error = desired - current;
@@ -157,21 +141,10 @@ float Control::controlRho(float current, float desired) {
 	if(error > 0.5 && output < 80) output = 80;
 	if(error < -0.5 && output > -80) output = -80;
 
-	// Print current values for testing
-//	Serial.print("\trho: "); Serial.print(current,5);
-//	Serial.print("\ttargetRho: "); Serial.print(desired);
-//	Serial.print("\terror: "); Serial.print(error,5);
-//	Serial.print("\tP: "); Serial.print(P);
-//	Serial.print("\tI: "); Serial.print(I_phi);
-//	Serial.print("\tD: "); Serial.print(D);
-//	Serial.print("\tSum: "); Serial.println(output);
-
-
 	return output;
 }
 
 float Control::controlPhi(float current, float desired) {
-
 	float P = 0, D = 0, output = 0;
 	// Calculate error
 	error = desired - current;
@@ -180,9 +153,9 @@ float Control::controlPhi(float current, float desired) {
 
 	// Calculate I component
 	// Give I some help if the error changes sign
-	if(error < 0 && I_phi > 0) I_phi = 0; //!< NEW
-	if(error > 0 && I_phi < 0) I_phi = 0; //!< NEW
-	if(abs(error) <= 0.0001 || abs(error) >= 15*PI/180) I_phi = 0; //!< NEW
+	if(error < 0 && I_phi > 0) I_phi = 0;
+	if(error > 0 && I_phi < 0) I_phi = 0;
+	if(abs(error) <= 0.0001 || abs(error) >= 15*PI/180) I_phi = 0;
 
 	I_phi += KI_PHI * float(CONTROL_SAMPLE_RATE / 1000.0) * error;
 	// Calculate D component
@@ -200,23 +173,11 @@ float Control::controlPhi(float current, float desired) {
 	if(error > 0.1 && output < 80) output = 80;
 	if(error < -0.1 && output > -80) output = -80;
 
-	// Print current values for testing
-	Serial.print("phi: "); Serial.print(current,5);
-	Serial.print("\ttargetPhi: "); Serial.print(desired);
-	Serial.print("\terror: "); Serial.print(error,5);
-	//Serial.print("\tP: "); Serial.print(P);
-	//Serial.print("\tI: "); Serial.print(I_phi);
-	//Serial.print("\tD: "); Serial.print(D);
-	Serial.print("\tnewDif: "); Serial.println(output);
-
 	return output;
 }
 
 void Control::setMotors(float diff, float sum) const {
 	Pair<float> target = {0,0}; 		//!< Motor PWM outputs
-	// sum: A value between -400 and 400 describing the voltage sum applied to left and right motors
-	// (Voltage of left motor + voltage of right motor = sum. sum = -400 = full reverse, sum = 400 = full forward)
-	// diff: A decimal value between 0 and 400 describing the proportional difference in voltages applied to left nd right motors (controls rotation, higher value =
 
 	target.R = (sum - diff) / float(2.0);
 	target.L = (sum + diff) / float(2.0);
@@ -231,10 +192,10 @@ void Control::setMotors(float diff, float sum) const {
 	targetSpeed = {int(target.L),int(target.R)};
 }
 
+// If the errors are low enough for long enough, return true
 bool Control::isDone() {
 	bool done = false;
-	// If the errors are low enough for long enough, return true
-	// if current position is the same as the previous position
+
 	// Every MIN_SETTLING_TIME milliseconds
 	if (millis()-startTime >= lastTime + MIN_SETTLING_TIME) {
 
@@ -245,7 +206,6 @@ bool Control::isDone() {
 			// The robot is done moving, or isn't moving fast enough for us to wait.
 			done = true;
 		}
-
 		// Save position
 		pastCounts = counts;
 	}
